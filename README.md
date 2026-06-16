@@ -88,8 +88,11 @@ Buttons use internal pull-up resistors (no external resistor needed).
 
 ### PC Side
 
-- **Python 3.10+**
-- Dependencies: mediapipe, opencv-python, numpy, requests
+- **Python 3.10+** — install if you don't have it:
+  - **Windows**: Download from [python.org](https://www.python.org/downloads/) — check "Add Python to PATH" during install
+  - **macOS**: `brew install python` (requires [Homebrew](https://brew.sh/)) or download from [python.org](https://www.python.org/downloads/)
+  - **Linux (Ubuntu/Debian)**: `sudo apt install python3 python3-pip python3-venv`
+- Dependencies: mediapipe, opencv-python, numpy, requests (installed via `pip` in step 2)
 
 ### Firmware Side
 
@@ -131,8 +134,8 @@ pip install -r requirements.txt
 #### Linux
 
 ```bash
-# OpenCV display requires these system packages
-sudo apt install -y libgl1-mesa-glx libglib2.0-0
+# System packages needed for OpenCV display and Python venv
+sudo apt install -y python3-venv libgl1-mesa-glx libglib2.0-0
 
 cd pc
 python3 -m venv .venv
@@ -142,7 +145,9 @@ pip install -r requirements.txt
 
 ### 3. Download the MediaPipe model
 
-Download the Pose Landmarker Lite model and place it in `pc/models/`:
+Download the Pose Landmarker Lite model (~5.5 MB) and place it in `pc/models/`:
+
+**macOS / Linux:**
 
 ```bash
 mkdir -p pc/models
@@ -150,12 +155,14 @@ curl -L -o pc/models/pose_landmarker_lite.task \
   "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task"
 ```
 
-On Windows (PowerShell):
+**Windows (PowerShell):**
 
 ```powershell
 New-Item -ItemType Directory -Force -Path pc\models
 Invoke-WebRequest -Uri "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task" -OutFile pc\models\pose_landmarker_lite.task
 ```
+
+Or download manually from [this link](https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task) and save it as `pc/models/pose_landmarker_lite.task`.
 
 ### 4. Flash the firmware
 
@@ -212,7 +219,13 @@ sudo usermod -a -G dialout $USER
 
 ### With ESP32 stream (normal mode)
 
-Make sure both the ESP32 and your PC are on the same WiFi network. After flashing, the ESP32 prints its IP address to the serial monitor.
+Make sure both the ESP32 and your PC are on the same WiFi network. After flashing, find the ESP32's IP address using the serial monitor:
+
+```bash
+arduino-cli monitor -p <YOUR_PORT> -c baudrate=115200
+```
+
+You'll see a line like `[WiFi] Connected! IP: 192.168.x.x` — use that IP:
 
 ```bash
 cd pc
