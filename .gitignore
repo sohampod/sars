@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# MediaPipe model (downloaded separately)
+pc/models/
+
+# Calibration data (generated at runtime)
+pc/calibration.json
+
+# WiFi credentials (user-specific)
+firmware/sars_firmware/credentials.h
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
