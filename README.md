@@ -117,9 +117,23 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-#### macOS / Linux
+#### macOS
 
 ```bash
+cd pc
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+> **Note (macOS):** If using webcam mode (`--webcam`), grant camera access to your Terminal app in System Settings → Privacy & Security → Camera.
+
+#### Linux
+
+```bash
+# OpenCV display requires these system packages
+sudo apt install -y libgl1-mesa-glx libglib2.0-0
+
 cd pc
 python3 -m venv .venv
 source .venv/bin/activate
