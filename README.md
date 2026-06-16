@@ -299,7 +299,3 @@ sars/
 **Serial port permission denied (Linux)**: Add your user to the `dialout` group (see Installation step 4).
 
 **Low FPS**: The camera streams at QVGA (320x240) with JPEG quality 12 — this is intentional for performance. MediaPipe internally resizes to 256x256 anyway.
-
-## License
-
-This project was created for the Interactive Systems course at Saarland University.
