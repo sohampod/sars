@@ -2,24 +2,23 @@
 __pycache__/
 *.pyc
 .venv/
-venv/
-*.egg-info/
 
-# MediaPipe model (downloaded separately)
+# MediaPipe model (download separately)
 pc/models/
 
-# Calibration data (generated at runtime)
+# Personal calibration data
 pc/calibration.json
 
-# WiFi credentials (user-specific)
-firmware/sars_firmware/credentials.h
+# SQLite database (local session data)
+pc/posture_data.db
+pc/posture_data.db-shm
+pc/posture_data.db-wal
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Arduino build artifacts
+firmware/sars_firmware/build/
+
+# WiFi credentials (sensitive)
+firmware/sars_firmware/credentials.h
 
 # OS
 .DS_Store

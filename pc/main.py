@@ -1,182 +1,146 @@
 import argparse
+import os
 import sys
 import time
-from typing import Generator
 
 import cv2
-import numpy as np
 
-from break_timer import BreakPhase, BreakState, BreakTimer
+_HERE = os.path.dirname(os.path.abspath(__file__))
+
+from break_timer import BreakTimer
 from config import Config
-from posture_engine import PostureEngine, PostureLevel, PostureState
+from dashboard import Dashboard
+from data_logger import DataLogger
+from gamification import GamificationEngine
+from posture_engine import PostureEngine
 from state_sender import StateSender
 from stream_reader import StreamReader
 
-# Colors (BGR)
-_GREEN = (89, 199, 52)
-_YELLOW = (0, 200, 255)
-_RED = (48, 59, 255)
-_WHITE = (240, 240, 240)
-_GRAY = (160, 160, 160)
-_DARK_GRAY = (100, 100, 100)
-_PANEL_BG = (25, 25, 25)
-_ORANGE = (0, 165, 255)
 
-DISPLAY_W = 640
-DISPLAY_H = 480
-PANEL_H = 120
-
-
-def build_panel(state: PostureState, calibrated: bool, break_state: BreakState | None = None) -> np.ndarray:
-    panel = np.full((PANEL_H, DISPLAY_W, 3), _PANEL_BG, dtype=np.uint8)
-
-    cv2.line(panel, (0, 0), (DISPLAY_W, 0), (60, 60, 60), 1)
-
-    if not state.landmarks_visible:
-        cv2.circle(panel, (25, 30), 7, _DARK_GRAY, -1)
-        cv2.putText(
-            panel, "NO PERSON DETECTED", (42, 35),
-            cv2.FONT_HERSHEY_SIMPLEX, 0.6, _DARK_GRAY, 1, cv2.LINE_AA,
-        )
-        _draw_panel_footer(panel, calibrated)
-        return panel
-
-    if state.level == PostureLevel.GOOD:
-        color = _GREEN
-        text = "GOOD POSTURE"
-    elif state.level == PostureLevel.WARNING:
-        color = _YELLOW
-        text = "WARNING: SIT BACK"
+def _webcam_frames(camera_index=0):
+    if sys.platform == 'win32':
+        cap = cv2.VideoCapture(camera_index, cv2.CAP_MSMF)
     else:
-        color = _RED
-        text = "BAD POSTURE!"
-
-    cv2.circle(panel, (25, 24), 7, color, -1)
-    cv2.putText(
-        panel, text, (42, 30),
-        cv2.FONT_HERSHEY_SIMPLEX, 0.65, color, 2, cv2.LINE_AA,
-    )
-
-    bar_x, bar_y = 340, 15
-    bar_w, bar_h = 220, 16
-    cv2.rectangle(panel, (bar_x, bar_y), (bar_x + bar_w, bar_y + bar_h), (50, 50, 50), -1)
-
-    fill_w = int(bar_w * state.score)
-    if state.score >= 0.7:
-        bar_color = _GREEN
-    elif state.score >= 0.4:
-        bar_color = _YELLOW
-    else:
-        bar_color = _RED
-    cv2.rectangle(panel, (bar_x, bar_y), (bar_x + fill_w, bar_y + bar_h), bar_color, -1)
-    cv2.rectangle(panel, (bar_x, bar_y), (bar_x + bar_w, bar_y + bar_h), (70, 70, 70), 1)
-
-    cv2.putText(
-        panel, f"{state.score:.0%}", (bar_x + bar_w + 8, bar_y + 13),
-        cv2.FONT_HERSHEY_SIMPLEX, 0.45, _WHITE, 1, cv2.LINE_AA,
-    )
-
-    row2_y = 58
-    cv2.putText(
-        panel, f"Ratio: {state.nose_shoulder_ratio:.2f}", (25, row2_y),
-        cv2.FONT_HERSHEY_SIMPLEX, 0.42, _GRAY, 1, cv2.LINE_AA,
-    )
-    if not np.isnan(state.head_forward_ratio):
-        cv2.putText(
-            panel, f"Head fwd: {state.head_forward_ratio:.2f}", (175, row2_y),
-            cv2.FONT_HERSHEY_SIMPLEX, 0.42, _GRAY, 1, cv2.LINE_AA,
-        )
-    cv2.putText(
-        panel, f"Tilt: {state.shoulder_tilt:.2f}", (350, row2_y),
-        cv2.FONT_HERSHEY_SIMPLEX, 0.42, _GRAY, 1, cv2.LINE_AA,
-    )
-
-    if break_state:
-        _draw_break_row(panel, break_state)
-
-    _draw_panel_footer(panel, calibrated)
-    return panel
-
-
-def _fmt_time(seconds: float) -> str:
-    m, s = divmod(int(seconds), 60)
-    return f"{m}:{s:02d}"
-
-
-def _draw_break_row(panel: np.ndarray, bs: BreakState) -> None:
-    row_y = 80
-
-    if bs.phase == BreakPhase.WORKING:
-        text = f"Working: {_fmt_time(bs.working_elapsed_sec)}   Next break in {_fmt_time(bs.time_until_next_break_sec)}"
-        color = _GRAY
-    elif bs.phase == BreakPhase.MICRO_BREAK_DUE:
-        text = f"MICRO BREAK - look away from screen for 20s   [{_fmt_time(bs.working_elapsed_sec)}]"
-        color = _YELLOW
-    elif bs.phase == BreakPhase.ACTIVE_BREAK_DUE:
-        text = f"BREAK TIME - stand up and stretch!   [{_fmt_time(bs.working_elapsed_sec)}]"
-        color = _ORANGE
-    elif bs.phase == BreakPhase.HARD_CEILING:
-        text = f"YOU MUST TAKE A BREAK NOW!   [{_fmt_time(bs.working_elapsed_sec)}]"
-        color = _RED
-    elif bs.phase == BreakPhase.ON_BREAK:
-        text = f"On break... (breaks taken: {bs.breaks_taken})"
-        color = _GREEN
-    else:
-        return
-
-    if bs.snooze_active:
-        text += "  [SNOOZED]"
-
-    cv2.putText(
-        panel, text, (25, row_y),
-        cv2.FONT_HERSHEY_SIMPLEX, 0.38, color, 1, cv2.LINE_AA,
-    )
-
-
-def _draw_panel_footer(panel: np.ndarray, calibrated: bool) -> None:
-    row_y = PANEL_H - 10
-
-    cal_text = "CALIBRATED" if calibrated else "UNCALIBRATED - press C"
-    cal_color = _GREEN if calibrated else _YELLOW
-    cv2.putText(
-        panel, cal_text, (25, row_y),
-        cv2.FONT_HERSHEY_SIMPLEX, 0.35, cal_color, 1, cv2.LINE_AA,
-    )
-
-    cv2.putText(
-        panel, "Q=quit  C=calibrate  S=snooze  B=break", (340, row_y),
-        cv2.FONT_HERSHEY_SIMPLEX, 0.33, _DARK_GRAY, 1, cv2.LINE_AA,
-    )
-
-
-def _webcam_frames(camera_index: int = 0) -> Generator[np.ndarray, None, None]:
-    cap = cv2.VideoCapture(camera_index)
+        cap = cv2.VideoCapture(camera_index)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     if not cap.isOpened():
         print(f"[WEBCAM] Cannot open camera index {camera_index}")
         return
-    print(f"[WEBCAM] Opened camera index {camera_index}")
+    print(f"[WEBCAM] Opened camera index {camera_index} ({'MSMF' if sys.platform == 'win32' else 'default'})")
+    fail_count = 0
     try:
         while True:
             ret, frame = cap.read()
             if not ret:
+                fail_count += 1
+                if fail_count >= 30:
+                    print(f"[WEBCAM] 30 consecutive read failures, stopping camera {camera_index}")
+                    return
+                time.sleep(0.1)
                 continue
+            fail_count = 0
             frame = cv2.flip(frame, 1)
             yield frame
     finally:
         cap.release()
 
 
-def main() -> None:
+def _n2px(nxy, w, h):
+    return (int(nxy[0] * w), int(nxy[1] * h))
+
+
+def _draw_arrow(img, start, direction, length, color, thickness=2):
+    end = (start[0] + int(direction[0] * length),
+           start[1] + int(direction[1] * length))
+    cv2.arrowedLine(img, start, end, color, thickness, tipLength=0.35)
+
+
+def draw_overlay(frame, state):
+    if not state.landmarks_visible:
+        return frame
+
+    out = frame.copy()
+    h, w = out.shape[:2]
+
+    nose = _n2px(state.nose_nxy, w, h)
+    ls = _n2px(state.l_shoulder_nxy, w, h)
+    rs = _n2px(state.r_shoulder_nxy, w, h)
+    mid_s = ((ls[0] + rs[0]) // 2, (ls[1] + rs[1]) // 2)
+
+    overlay = out.copy()
+
+    def score_color(s):
+        if s >= 0.7:
+            return (74, 222, 128)
+        if s >= 0.4:
+            return (11, 158, 245)
+        return (113, 113, 248)
+
+    shoulder_clr = score_color(state.tilt_score)
+    cv2.line(overlay, ls, rs, shoulder_clr, 3, cv2.LINE_AA)
+
+    spine_clr = score_color(state.slouch_score)
+    cv2.line(overlay, mid_s, nose, spine_clr, 3, cv2.LINE_AA)
+
+    cv2.circle(overlay, nose, 5, spine_clr, -1, cv2.LINE_AA)
+    cv2.circle(overlay, ls, 5, shoulder_clr, -1, cv2.LINE_AA)
+    cv2.circle(overlay, rs, 5, shoulder_clr, -1, cv2.LINE_AA)
+
+    le = _n2px(state.l_ear_nxy, w, h)
+    re = _n2px(state.r_ear_nxy, w, h)
+    head_clr = score_color(state.head_score)
+    cv2.circle(overlay, le, 4, head_clr, -1, cv2.LINE_AA)
+    cv2.circle(overlay, re, 4, head_clr, -1, cv2.LINE_AA)
+
+    cv2.addWeighted(overlay, 0.7, out, 0.3, 0, out)
+
+    if state.level in (state.level.WARNING, state.level.BAD):
+        worst = min(
+            ('slouch', state.slouch_score),
+            ('head', state.head_score),
+            ('tilt', state.tilt_score),
+            key=lambda x: x[1],
+        )
+        arrow_color = (0, 180, 255) if state.level == state.level.WARNING else (80, 80, 255)
+        if worst[0] == 'slouch' and worst[1] < 0.65:
+            _draw_arrow(out, (nose[0], nose[1] + 10), (0, -1), 30, arrow_color, 2)
+        elif worst[0] == 'head' and worst[1] < 0.65:
+            ear_mid = ((le[0] + re[0]) // 2, (le[1] + re[1]) // 2)
+            _draw_arrow(out, ear_mid, (-0.7, -0.3), 25, arrow_color, 2)
+        elif worst[0] == 'tilt' and worst[1] < 0.65:
+            higher = ls if ls[1] > rs[1] else rs
+            _draw_arrow(out, higher, (0, -1), 20, arrow_color, 2)
+
+    bar_x = w - 30
+    bar_h = 40
+    bar_w = 6
+    for i, (label, sc) in enumerate([('S', state.slouch_score), ('H', state.head_score), ('T', state.tilt_score)]):
+        y_base = 20 + i * (bar_h + 12)
+        cv2.rectangle(out, (bar_x - 1, y_base), (bar_x + bar_w + 1, y_base + bar_h), (40, 40, 40), -1)
+        fill_h = int(bar_h * sc)
+        clr = score_color(sc)
+        if fill_h > 0:
+            cv2.rectangle(out, (bar_x, y_base + bar_h - fill_h), (bar_x + bar_w, y_base + bar_h), clr, -1)
+        cv2.putText(out, label, (bar_x - 2, y_base + bar_h + 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.3, (180, 180, 180), 1, cv2.LINE_AA)
+
+    return out
+
+
+def main():
     parser = argparse.ArgumentParser(description="SARS Posture Monitor")
-    parser.add_argument("--webcam", action="store_true", help="Use PC webcam instead of ESP32 stream")
-    parser.add_argument("--camera", type=int, default=0, help="Webcam index (default 0)")
+    parser.add_argument("--webcam", action="store_true", help="Use PC webcam")
+    parser.add_argument("--camera", type=int, default=0, help="Webcam index")
     parser.add_argument("--url", type=str, default=None, help="ESP32 stream URL override")
+    parser.add_argument("--no-dashboard", action="store_true", help="Skip web dashboard")
+    parser.add_argument("--port", type=int, default=None, help="Dashboard port override")
     args = parser.parse_args()
 
     config = Config()
-
+    config.model_path = os.path.join(_HERE, config.model_path)
+    config.calibration_file = os.path.join(_HERE, config.calibration_file)
+    config.db_path = os.path.join(_HERE, config.db_path)
     if args.url:
         config.esp32_stream_url = args.url
 
@@ -188,16 +152,29 @@ def main() -> None:
         min_confidence=config.min_landmark_confidence,
         ear_confidence=config.ear_confidence_threshold,
     )
-
     engine.load_calibration(config.calibration_file)
 
     if args.url:
-        parts = args.url.split("/")
-        base = f"{parts[0]}//{parts[2].split(':')[0]}"
-        config.esp32_state_url = f"{base}/state"
+        try:
+            parts = args.url.split("/")
+            base = f"{parts[0]}//{parts[2].split(':')[0]}"
+            config.esp32_state_url = f"{base}/state"
+        except (IndexError, ValueError):
+            print(f"[SARS] Malformed --url '{args.url}', using default state URL")
 
     sender = StateSender(config.esp32_state_url)
     sender.start()
+
+    db = DataLogger(config.db_path)
+    gamification = GamificationEngine(db)
+    break_timer = BreakTimer(config)
+
+    dashboard = None
+    dash_port = args.port or config.dashboard_port
+    config.dashboard_port = dash_port
+    if not args.no_dashboard:
+        dashboard = Dashboard(config, gamification, db, sender=sender, break_timer=break_timer)
+        dashboard.start()
 
     if args.webcam:
         print(f"[SARS] Using webcam (index {args.camera})")
@@ -207,89 +184,98 @@ def main() -> None:
         reader = StreamReader(config.esp32_stream_url, config.stream_timeout)
         frame_source = reader.frames()
 
-    break_timer = BreakTimer(config)
+    print(f"[SARS] Running headless. Dashboard at http://localhost:{dash_port}")
+    print("[SARS] Press Ctrl+C to stop.")
 
     calibrating = False
-    cal_frames: list[np.ndarray] = []
+    cal_frames = []
     cal_start = 0.0
     frame_idx = 0
-    last_state: PostureState | None = None
-    analyze_every = 3
+    last_state = None
 
     try:
         for frame in frame_source:
             frame_idx += 1
 
-            if frame_idx % analyze_every == 0 or last_state is None:
+            if frame_idx % 3 == 0 or last_state is None:
                 state = engine.analyze(frame)
                 last_state = state
             else:
                 state = last_state
 
-            display = cv2.resize(frame, (DISPLAY_W, DISPLAY_H), interpolation=cv2.INTER_LINEAR)
-
             if calibrating:
                 cal_frames.append(frame.copy())
                 elapsed = time.time() - cal_start
-                remaining = max(0, 2.0 - elapsed)
-
-                cv2.putText(
-                    display,
-                    f"CALIBRATING... hold good posture ({remaining:.1f}s)",
-                    (80, DISPLAY_H // 2),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, _ORANGE, 2, cv2.LINE_AA,
-                )
-
-                if elapsed >= 2.0:
+                progress = min(1.0, elapsed / config.calibration_duration_sec)
+                if dashboard:
+                    dashboard.update_calibration('in_progress', progress)
+                if elapsed >= config.calibration_duration_sec:
                     success = engine.calibrate(cal_frames)
                     if success:
                         engine.save_calibration(config.calibration_file)
+                        print("[SARS] Calibration complete.")
+                        if dashboard:
+                            dashboard.update_calibration('success', 1.0)
+                    else:
+                        print("[SARS] Calibration failed.")
+                        if dashboard:
+                            dashboard.update_calibration('failed', 0.0)
                     calibrating = False
                     cal_frames = []
 
             break_state = break_timer.tick(state.landmarks_visible)
 
-            sender.update(state, break_state)
+            gamification.tick(state, break_state)
+            gam = gamification.get_summary()
+            sender.update(state, break_state, gam)
+
+            if dashboard:
+                dashboard.update(state, break_state)
+                if frame_idx % 10 == 0:
+                    ret, jpg = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
+                    if ret and jpg is not None:
+                        dashboard.update_frame(jpg.tobytes())
 
             btn = sender.get_button_events()
             if btn.calibrate and not calibrating:
-                print("[SARS] Calibrate button pressed on device")
+                print("[SARS] Calibrate from device")
                 calibrating = True
                 cal_frames = []
                 cal_start = time.time()
-            if btn.snooze:
-                if break_timer.snooze():
-                    print("[SARS] Snooze button pressed on device")
+            if btn.snooze and break_timer.snooze():
+                print("[SARS] Snooze from device")
 
-            panel = build_panel(state, engine.is_calibrated(), break_state)
-            combined = np.vstack([display, panel])
-
-            cv2.imshow(config.window_name, combined)
-
-            key = cv2.waitKey(1) & 0xFF
-            if key == ord("q"):
-                break
-            elif key == ord("c") and not calibrating:
-                print("[SARS] Starting calibration - hold good posture for 2 seconds...")
-                calibrating = True
-                cal_frames = []
-                cal_start = time.time()
-            elif key == ord("s"):
-                if break_timer.snooze():
-                    print("[SARS] Break snoozed for 5 minutes")
-                else:
-                    print("[SARS] Already snoozed this cycle")
-            elif key == ord("b"):
-                break_timer.acknowledge_break()
-                print("[SARS] Break acknowledged, timer reset")
+            if dashboard:
+                if dashboard.pop_calibrate() and not calibrating:
+                    print("[SARS] Calibrate from dashboard")
+                    calibrating = True
+                    cal_frames = []
+                    cal_start = time.time()
+                if dashboard.pop_snooze() and break_timer.snooze():
+                    print("[SARS] Snooze from dashboard")
 
     except KeyboardInterrupt:
         print("\n[SARS] Interrupted.")
+    except Exception as e:
+        print(f"\n[SARS] Fatal error: {e}")
     finally:
-        sender.stop()
-        if not args.webcam:
-            reader.close()
-        cv2.destroyAllWindows()
+        try:
+            sender.stop()
+        except Exception:
+            pass
+        try:
+            gamification.flush_daily_stats()
+        except Exception:
+            pass
+        try:
+            db.close()
+        except Exception:
+            pass
+        try:
+            if not args.webcam:
+                reader.close()
+        except Exception:
+            pass
         print("[SARS] Shutdown complete.")
 
 

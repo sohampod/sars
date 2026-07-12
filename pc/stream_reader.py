@@ -1,9 +1,16 @@
+from __future__ import annotations
+import logging
 import time
 from typing import Generator
 
 import cv2
 import numpy as np
 import requests
+
+logger = logging.getLogger(__name__)
+
+_MAX_BUF_SIZE = 2 * 1024 * 1024   # 2 MB hard cap
+_TRIM_THRESHOLD = 512 * 1024       # 512 KB
 
 
 class StreamReader:
@@ -39,20 +46,35 @@ class StreamReader:
     def _parse_mjpeg(
         self, resp: requests.Response
     ) -> Generator[np.ndarray, None, None]:
-        buf = b""
+        buf = bytearray()
         for chunk in resp.iter_content(chunk_size=4096):
-            buf += chunk
+            buf.extend(chunk)
+
+            # buffer too big, no valid frame found - reset
+            if len(buf) > _MAX_BUF_SIZE:
+                logger.warning(
+                    "[STREAM] Buffer exceeded %d bytes with no complete "
+                    "frame - discarding",
+                    _MAX_BUF_SIZE,
+                )
+                buf.clear()
+                continue
 
             while True:
                 soi = buf.find(b"\xff\xd8")
                 if soi == -1:
+                    # no SOI, clear it
+                    buf.clear()
                     break
                 eoi = buf.find(b"\xff\xd9", soi + 2)
                 if eoi == -1:
+                    # trim junk before the SOI we're building
+                    if len(buf) > _TRIM_THRESHOLD and soi > 0:
+                        del buf[:soi]
                     break
 
-                jpg = buf[soi : eoi + 2]
-                buf = buf[eoi + 2 :]
+                jpg = bytes(buf[soi : eoi + 2])
+                del buf[: eoi + 2]
 
                 frame = cv2.imdecode(
                     np.frombuffer(jpg, dtype=np.uint8), cv2.IMREAD_COLOR

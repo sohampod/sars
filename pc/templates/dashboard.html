@@ -1,0 +1,1194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SARS</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230e0e0e'/><rect x='14' y='4' width='4' height='4' fill='%234ade80'/><rect x='14' y='9' width='4' height='4' fill='%234ade80'/><rect x='13' y='14' width='4' height='4' fill='%234ade80'/><rect x='15' y='19' width='4' height='4' fill='%234ade80'/><rect x='14' y='24' width='4' height='4' fill='%234ade80'/></svg>">
+<style>
+@font-face{font-family:'Geist Pixel';src:url('/static/fonts/GeistPixel-Square.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+
+*{margin:0;padding:0;box-sizing:border-box}
+:root,
+[data-theme="dark"]{
+  --bg:#0e0e0e;
+  --dk:#141414;--dk2:#1c1c1c;--dk3:#232323;
+  --wm:#e4d9cc;--wm2:#d9cdbf;--wmtxt:#3d3529;--wmmut:#7a6e5e;
+  --txt:#f0ede8;--mut:#888;--dim:#888;
+  --grn:#4ade80;--amb:#f59e0b;--red:#f87171;
+  --pur:#8b5cf6;--gld:#c9a96e;
+  --r:14px;
+  --pad:16px;--gap:8px;
+  --card-pad:16px;
+  --glass-trk:rgba(255,255,255,.06);
+  --glass-ghost:rgba(255,255,255,.1);
+  --glass-bg:rgba(255,255,255,.025);
+  --glass-bar:rgba(255,255,255,.05);
+  --glass-text:rgba(255,255,255,.7);
+  --card-shadow:rgba(0,0,0,.25);
+}
+[data-theme="light"]{
+  --bg:#f0ede8;
+  --dk:#e6e3de;--dk2:#ffffff;--dk3:#d9d6d0;
+  --wm:#e4d9cc;--wm2:#d9cdbf;--wmtxt:#3d3529;--wmmut:#7a6e5e;
+  --txt:#1a1a1a;--mut:#666;--dim:#999;
+  --grn:#16a34a;--amb:#d97706;--red:#dc2626;
+  --pur:#7c3aed;--gld:#8a6d3b;
+  --glass-trk:rgba(0,0,0,.08);
+  --glass-ghost:rgba(0,0,0,.06);
+  --glass-bg:rgba(0,0,0,.03);
+  --glass-bar:rgba(0,0,0,.06);
+  --glass-text:rgba(0,0,0,.6);
+  --card-shadow:rgba(0,0,0,.08);
+}
+body{background:var(--bg);color:var(--txt);font-family:'Geist Pixel',monospace;-webkit-font-smoothing:antialiased}
+
+/* Desktop: lock to viewport. Smaller: allow scroll. */
+.shell{display:flex;flex-direction:column;padding:10px var(--pad);gap:var(--gap)}
+.shell--locked{height:100dvh;height:100vh;overflow:hidden;display:grid;grid-template-rows:auto 1fr}
+
+nav{display:flex;align-items:center;gap:12px;flex-shrink:0;height:36px}
+nav h1{font:400 clamp(18px,2.5vw,26px)/1 'Geist Pixel',monospace;letter-spacing:.06em;text-transform:uppercase}
+.pill{font:700 clamp(8px,1vw,10px) 'Geist Pixel',monospace;letter-spacing:.12em;text-transform:uppercase;background:var(--dk3);color:var(--mut);padding:5px 14px;border-radius:20px}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.theme-btn{width:32px;height:32px;border:none;border-radius:50%;background:var(--dk3);color:var(--mut);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.theme-btn:hover{background:var(--dk);transform:scale(1.1)}
+[data-theme="light"] .theme-btn{background:var(--dk3);color:var(--wmtxt)}
+[data-theme="light"] .c-status::before{background:rgba(240,237,232,.65)}
+[data-theme="light"] .si-good::before{background:rgba(240,237,232,.7)}
+[data-theme="light"] .si-xp::before{background:rgba(240,237,232,.68)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--grn);box-shadow:0 0 8px color-mix(in srgb,var(--grn) 40%,transparent);animation:pls 2s ease infinite}
+.dot.off{background:var(--red);box-shadow:0 0 8px color-mix(in srgb,var(--red) 30%,transparent);animation:none}
+@keyframes pls{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ===== GRID — desktop 4-column, single viewport ===== */
+.grid{
+  flex:1;min-height:0;
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr 1fr;
+  grid-template-rows:2fr 1fr auto 1fr;
+  gap:var(--gap);
+}
+
+.c{border-radius:var(--r);overflow:hidden;transition:transform .25s,box-shadow .25s}
+.c:hover{transform:translateY(-1px);box-shadow:0 8px 30px var(--card-shadow)}
+.dk{background:var(--dk2)}
+.wm{background:var(--wm);color:var(--wmtxt)}
+
+/* --- Camera feed — spans 2 cols, 2 rows --- */
+.c-feed{grid-column:1/3;grid-row:1/3}
+.c-feed img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* --- Score gauge --- */
+.c-score{grid-column:3;grid-row:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(4px,0.8vh,8px);padding:var(--card-pad)}
+.gauge{width:75%;aspect-ratio:1;max-width:180px}
+.gauge .trk{fill:none;stroke:var(--glass-trk);stroke-width:4}
+.gauge .arc{fill:none;stroke-width:4;stroke-linecap:round;transition:stroke-dashoffset .8s cubic-bezier(.4,0,.2,1),stroke .4s}
+.gauge .num{font:700 clamp(20px,4.5vh,44px) 'Geist Pixel',monospace;fill:var(--txt)}
+.gauge-label{font:700 clamp(7px,0.8vh,10px) 'Geist Pixel',monospace;color:var(--mut);letter-spacing:.2em;text-transform:uppercase}
+#stl{font:700 clamp(10px,1.5vh,16px)/1 'Geist Pixel',monospace;text-transform:uppercase;letter-spacing:.14em;transition:color .4s}
+
+/* --- Image card base (shared pattern) --- */
+.img-card{position:relative;background-size:cover;background-position:center}
+.img-card::before{content:'';position:absolute;inset:0;border-radius:inherit}
+.img-card>*{position:relative;z-index:1}
+
+/* --- Status card --- */
+.c-status{grid-column:4;grid-row:1;padding:var(--card-pad);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:clamp(6px,1.2vh,14px);background-image:url('/static/img/silk.jpg')}
+.c-status::before{background:rgba(228,217,204,.72)}
+.c-status>div{display:flex;flex-direction:column;align-items:center;width:100%}
+.c-status .tag{font:700 clamp(7px,1vh,11px) 'Geist Pixel',monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--wmmut);margin-bottom:2px}
+.c-status .big{font:700 clamp(28px,5.5vh,60px)/1 'Geist Pixel',monospace;color:var(--wmtxt);text-transform:uppercase;letter-spacing:.02em}
+.c-status .big-sm{font:700 clamp(20px,3.5vh,40px)/1 'Geist Pixel',monospace;color:var(--wmtxt);text-transform:uppercase;letter-spacing:.02em}
+
+/* --- Break timer --- */
+.c-break{grid-column:3;grid-row:2;padding:var(--card-pad);display:flex;align-items:center;justify-content:center;gap:clamp(12px,2vw,24px)}
+.ring{width:clamp(48px,8vh,80px);height:clamp(48px,8vh,80px);flex-shrink:0}
+.ring .trk{fill:none;stroke:var(--glass-trk);stroke-width:3}
+.ring .arc{fill:none;stroke:var(--pur);stroke-width:3;stroke-linecap:round;transition:stroke-dashoffset .8s ease}
+.ring text{font:700 clamp(9px,1.5vh,16px) 'Geist Pixel',monospace;fill:var(--txt)}
+.bm .tag{font:700 clamp(9px,1.2vh,13px) 'Geist Pixel',monospace;color:var(--mut);letter-spacing:.18em;text-transform:uppercase;margin-bottom:4px}
+.bm .ph{font:700 clamp(16px,3vh,28px)/1.2 'Geist Pixel',monospace;color:var(--glass-text);text-transform:uppercase}
+
+/* --- Action buttons --- */
+.c-act{grid-column:4;grid-row:2;display:flex;flex-direction:column;gap:var(--gap);padding:var(--card-pad)}
+.btn{flex:1;border:none;border-radius:10px;cursor:pointer;font:700 clamp(10px,1.3vh,14px) 'Geist Pixel',monospace;letter-spacing:.1em;text-transform:uppercase;transition:all .2s;position:relative;overflow:hidden}
+.btn-c{background:var(--wm);color:var(--wmtxt)}
+.btn-s{background:var(--dk3);color:var(--mut)}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.btn:active{transform:translateY(0)}
+.btn .fill{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(139,92,246,.2);border-radius:inherit;transition:width 2s linear;pointer-events:none}
+.btn.ld{pointer-events:none;opacity:.85}
+.btn.ld .fill{width:100%}
+
+/* --- Stat cards row — 4 columns --- */
+.c-stats{grid-column:1/5;grid-row:3;display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap)}
+.si{border-radius:var(--r);padding:var(--card-pad);text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.si .v{font:700 clamp(18px,2.5vw,34px) 'Geist Pixel',monospace;line-height:1.2}
+.si .l{font:700 clamp(7px,0.7vw,10px) 'Geist Pixel',monospace;letter-spacing:.18em;text-transform:uppercase;margin-top:clamp(2px,0.4vh,6px)}
+.si.wm .l{color:var(--wmmut)}
+.si.dk .l{color:var(--mut)}
+.si-good .v{color:#2d7a4a}
+.si-xp .v{color:#8a6d3b}
+[data-a11y-cb="on"] .si-good .v{color:var(--grn)}
+[data-a11y-cb="on"] .si-xp .v{color:var(--gld)}
+.si-good{background:url('/static/img/swirls.jpg') center/cover no-repeat;position:relative}
+.si-good::before{content:'';position:absolute;inset:0;background:rgba(228,217,204,.78);border-radius:inherit}
+.si-good>*{position:relative;z-index:1}
+.si-xp{background:url('/static/img/golden.jpg') center/cover no-repeat;position:relative}
+.si-xp::before{content:'';position:absolute;inset:0;background:rgba(228,217,204,.75);border-radius:inherit}
+.si-xp>*{position:relative;z-index:1}
+.si-level{text-align:left;align-items:flex-start}
+.si-level .ln{font:700 clamp(18px,2.5vw,34px) 'Geist Pixel',monospace;color:var(--glass-ghost)}
+.lv-nm{font:700 clamp(10px,1.2vw,15px) 'Geist Pixel',monospace;background:linear-gradient(135deg,#8b5cf6,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.xb{height:3px;background:var(--glass-bar);border-radius:2px;overflow:hidden;margin-top:clamp(3px,0.4vh,6px);width:100%}
+.xf{height:100%;background:linear-gradient(90deg,#7c3aed,#c084fc);border-radius:2px;transition:width .6s ease}
+.xr{display:flex;justify-content:space-between;font:700 clamp(6px,0.6vw,8px) 'Geist Pixel',monospace;color:var(--dim);margin-top:clamp(2px,0.3vh,5px);width:100%;gap:6px}
+.sk{font:700 clamp(8px,0.8vw,11px) 'Geist Pixel',monospace;color:var(--mut);margin-top:clamp(2px,0.3vh,5px)}
+.fire{display:inline-block;animation:pf 1.4s ease infinite}
+@keyframes pf{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+
+/* --- Bottom row — 1:3 ratio --- */
+.c-bot{grid-column:1/5;grid-row:4;display:grid;grid-template-columns:1fr 3fr;gap:var(--gap);align-items:stretch}
+.c-bot>.c{padding:var(--card-pad);display:flex;flex-direction:column}
+.sec{font:700 clamp(8px,0.8vw,11px) 'Geist Pixel',monospace;letter-spacing:.18em;color:var(--mut);margin-bottom:clamp(4px,0.6vh,10px);text-transform:uppercase;flex-shrink:0}
+.chart{display:flex;align-items:flex-end;gap:4px;flex:1;min-height:clamp(32px,4.5vh,60px)}
+.bc{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%}
+.bw{flex:1;width:100%;display:flex;align-items:flex-end}
+.bar{width:100%;min-height:3px;border-radius:3px 3px 1px 1px;transition:height .5s}
+.bar.g{background:var(--grn)}.bar.a{background:var(--amb)}.bar.r{background:var(--red)}
+.bl{font:700 clamp(6px,0.6vw,8px) 'Geist Pixel',monospace;color:var(--dim)}
+.bv{font:700 clamp(6px,0.6vw,8px) 'Geist Pixel',monospace;color:var(--mut)}
+.ach{display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:clamp(4px,0.5vw,8px);flex:1;align-content:center}
+.bdg{padding:clamp(8px,1vh,14px) clamp(4px,0.4vw,8px);border-radius:10px;background:var(--glass-bg);text-align:center;transition:all .3s;border:1px solid transparent}
+.bdg.gold{border-color:rgba(255,215,0,.2);box-shadow:0 0 12px rgba(255,215,0,.05)}
+.bdg.silver{border-color:rgba(192,192,210,.18)}
+.bdg.bronze{border-color:rgba(205,127,50,.18)}
+.bdg .em{font-size:clamp(16px,2.2vh,24px);display:block;margin-bottom:4px}
+.bdg .nm{font:700 clamp(7px,0.8vw,10px) 'Geist Pixel',monospace;letter-spacing:.05em}
+.empty{text-align:center;padding:10px;color:var(--dim);font:700 clamp(8px,0.8vw,11px) 'Geist Pixel',monospace}
+.bdg{position:relative}
+.bdg-info{position:absolute;top:3px;right:3px;width:14px;height:14px;border-radius:50%;background:var(--glass-ghost);color:var(--dim);font:700 9px 'Geist Pixel',monospace;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity .2s;line-height:1}
+.bdg:hover .bdg-info{opacity:1}
+.bdg-tip{display:none;position:fixed;padding:10px 14px;border-radius:10px;background:var(--dk);border:1px solid var(--glass-trk);box-shadow:0 6px 20px rgba(0,0,0,.4);z-index:200;white-space:nowrap}
+.bdg-tip.show{display:block}
+.bdg-tip-name{font:700 10px 'Geist Pixel',monospace;color:var(--txt);margin-bottom:2px}
+.bdg-tip-desc{font:400 9px 'Geist Pixel',monospace;color:var(--mut)}
+.bdg-tip-status{font:700 8px 'Geist Pixel',monospace;color:var(--grn);margin-top:3px;text-transform:uppercase;letter-spacing:.1em}
+.bdg-tip-status.locked{color:var(--dim)}
+[data-theme="light"] .bdg-tip{background:var(--dk2);border-color:var(--glass-trk)}
+
+/* ===== Settings panel ===== */
+.sp-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:90;opacity:0;pointer-events:none;transition:opacity .3s}
+.sp-overlay.open{opacity:1;pointer-events:auto}
+.sp{position:fixed;top:0;right:0;bottom:0;width:clamp(280px,30vw,360px);background:var(--dk2);z-index:100;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow-y:auto}
+.sp.open{transform:translateX(0)}
+.sp-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--glass-trk);flex-shrink:0}
+.sp-head h2{font:700 14px 'Geist Pixel',monospace;text-transform:uppercase;letter-spacing:.14em}
+.sp-close{background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px}
+.sp-close:hover{background:var(--glass-bg);color:var(--txt)}
+.sp-body{padding:16px 20px;display:flex;flex-direction:column;gap:20px;flex:1}
+.sp-sec{font:700 10px 'Geist Pixel',monospace;letter-spacing:.2em;text-transform:uppercase;color:var(--mut);margin-bottom:8px}
+.sp-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0}
+.sp-label{font:700 11px 'Geist Pixel',monospace;color:var(--txt)}
+.sp-val{font:400 11px 'Geist Pixel',monospace;color:var(--mut);text-align:right;word-break:break-all}
+.sp-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sp-dot.ok{background:var(--grn);box-shadow:0 0 6px color-mix(in srgb,var(--grn) 30%,transparent)}
+.sp-dot.err{background:var(--red);box-shadow:0 0 6px color-mix(in srgb,var(--red) 30%,transparent)}
+.sp-dot.warn{background:var(--amb);box-shadow:0 0 6px color-mix(in srgb,var(--amb) 30%,transparent)}
+.sp-hint{font:400 10px 'Geist Pixel',monospace;color:var(--dim);margin-top:4px;line-height:1.5}
+.sp-divider{height:1px;background:var(--glass-trk);margin:4px 0}
+.sp-btn{width:100%;padding:10px;border:none;border-radius:8px;font:700 11px 'Geist Pixel',monospace;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.sp-btn:hover{transform:translateY(-1px)}
+.sp-btn-danger{background:rgba(248,113,113,.12);color:var(--red);border:1px solid rgba(248,113,113,.2)}
+.sp-btn-danger:hover{background:rgba(248,113,113,.2)}
+.sp-confirm{display:none;margin-top:8px;padding:12px;border-radius:8px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.15)}
+.sp-confirm.show{display:block}
+.sp-confirm p{font:400 10px 'Geist Pixel',monospace;color:var(--red);margin-bottom:10px;line-height:1.5}
+.sp-confirm-btns{display:flex;gap:8px}
+.sp-confirm-btns .sp-btn{flex:1;padding:8px}
+.sp-btn-cancel{background:var(--dk3);color:var(--mut)}
+.settings-btn{width:32px;height:32px;border:none;border-radius:50%;background:var(--dk3);color:var(--mut);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.settings-btn:hover{background:var(--dk);transform:scale(1.1)}
+
+/* ===== Keyboard focus ===== */
+:focus-visible{outline:3px solid var(--pur);outline-offset:2px;border-radius:4px}
+button:focus-visible{outline-offset:1px}
+
+/* ===== prefers-reduced-motion (OS-level) ===== */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+}
+/* Manual reduced motion toggle */
+[data-a11y-motion="on"] *,[data-a11y-motion="on"] *::before,[data-a11y-motion="on"] *::after{
+  animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important
+}
+
+/* ===== Text size scaling (zoom scales everything including px values) ===== */
+[data-a11y-text="small"] .shell{zoom:0.88}
+[data-a11y-text="large"] .shell{zoom:1.15}
+
+/* ===== High contrast mode ===== */
+[data-a11y-hc="on"]{--glass-trk:rgba(255,255,255,.2);--glass-ghost:rgba(255,255,255,.15);--glass-bg:rgba(255,255,255,.08);--glass-bar:rgba(255,255,255,.12);--glass-text:rgba(255,255,255,.9);--card-shadow:rgba(0,0,0,.5);--mut:#bbb;--dim:#999}
+[data-a11y-hc="on"] .c{border:1px solid var(--glass-trk)}
+[data-a11y-hc="on"] .si{border:1px solid var(--glass-trk)}
+[data-a11y-hc="on"] .bdg{border:1px solid var(--glass-trk)}
+[data-a11y-hc="on"][data-theme="light"]{--glass-trk:rgba(0,0,0,.25);--mut:#444;--dim:#666;--card-shadow:rgba(0,0,0,.15)}
+[data-a11y-hc="on"][data-theme="light"] .c{border:1px solid var(--glass-trk)}
+
+/* ===== Color-blind safe mode (deuteranopia) ===== */
+[data-a11y-cb="on"]{--grn:#3b82f6;--amb:#f59e0b;--red:#e879f9}
+[data-a11y-cb="on"][data-theme="light"]{--grn:#2563eb;--amb:#d97706;--red:#c026d3}
+.cb-icon{display:none;font-size:.7em;margin-right:2px}
+[data-a11y-cb="on"] .cb-icon{display:inline}
+
+/* ===== Accessibility section in settings ===== */
+.a11y-seg{display:flex;gap:4px;margin:6px 0}
+.a11y-seg-btn{flex:1;padding:8px 0;border:1px solid var(--glass-trk);border-radius:6px;background:transparent;color:var(--mut);font:700 11px 'Geist Pixel',monospace;cursor:pointer;transition:all .15s;letter-spacing:.05em}
+.a11y-seg-btn:hover{background:var(--glass-bg)}
+.a11y-seg-btn.active{background:var(--pur);color:#fff;border-color:var(--pur)}
+
+/* ===== Clap sensitivity meter ===== */
+.mic-meter{position:relative;width:100%;height:32px;margin:8px 0 4px}
+.mic-track{position:relative;width:100%;height:10px;top:11px;background:var(--glass-trk);border-radius:5px;overflow:hidden}
+.mic-fill{position:absolute;top:0;left:0;height:100%;will-change:transform;transform-origin:left center;transition:width 80ms linear;border-radius:5px 0 0 5px}
+.mic-fill--below{background:var(--amb);opacity:.7;z-index:1}
+.mic-fill--above{background:var(--grn);z-index:2}
+.mic-slider{-webkit-appearance:none;appearance:none;position:absolute;top:0;left:0;width:100%;height:32px;background:transparent;margin:0;padding:0;z-index:4;cursor:ew-resize;touch-action:none}
+.mic-slider::-webkit-slider-thumb{-webkit-appearance:none;width:3px;height:20px;background:var(--txt);border:none;border-radius:2px;cursor:ew-resize;box-shadow:0 0 8px rgba(0,0,0,.4)}
+.mic-slider::-moz-range-thumb{width:4px;height:32px;background:var(--txt);border:none;border-radius:2px;cursor:ew-resize}
+.mic-slider::-moz-range-track{background:transparent;border:none}
+.mic-slider:focus-visible{outline:2px solid var(--pur);outline-offset:2px}
+.mic-labels{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
+.mic-lbl{font:400 9px 'Geist Pixel',monospace;color:var(--dim)}
+.mic-status-text{font:700 10px 'Geist Pixel',monospace;color:var(--mut);text-align:center;transition:color .3s}
+.mic-status-text.detected{color:var(--grn);animation:mic-flash .4s ease}
+@keyframes mic-flash{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+.mic-auto-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0}
+.mic-toggle{position:relative;width:36px;height:18px;background:var(--glass-trk);border-radius:9px;border:none;cursor:pointer;padding:0;transition:background .2s;flex-shrink:0}
+.mic-toggle::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;background:var(--mut);border-radius:50%;transition:all .2s}
+.mic-toggle.on{background:var(--grn)}
+.mic-toggle.on::after{left:20px;background:var(--txt)}
+.mic-auto-hint{font:400 9px 'Geist Pixel',monospace;color:var(--dim);margin-top:2px;line-height:1.4}
+.mic-slider-wrap{position:relative}
+.mic-slider-wrap.disabled{opacity:.35;pointer-events:none}
+
+/* ===== TABLET — 2 columns, scrollable ===== */
+@media(max-width:1024px){
+  :root{--pad:12px;--gap:6px;--card-pad:12px;--r:12px}
+  .shell--locked{height:auto;overflow:visible;display:flex}
+  .shell{min-height:100dvh;min-height:100vh}
+  .grid{
+    grid-template-columns:1fr 1fr;
+    grid-template-rows:auto auto auto auto auto;
+    flex:none;
+  }
+  .c-feed{grid-column:1/3;grid-row:1;height:32vh;max-height:280px}
+  .c-feed img{height:100%}
+  .c-score{grid-column:1;grid-row:2}
+  .c-status{grid-column:2;grid-row:2}
+  .c-break{grid-column:1;grid-row:3}
+  .c-act{grid-column:2;grid-row:3}
+  .c-stats{grid-column:1/3;grid-row:4;grid-template-columns:repeat(4,1fr)}
+  .c-bot{grid-column:1/3;grid-row:5;grid-template-columns:1fr 2fr}
+  .pill{display:none}
+}
+
+/* ===== SMALL TABLET / LARGE PHONE — 2 columns, scrollable ===== */
+@media(max-width:768px){
+  :root{--pad:10px;--gap:5px;--card-pad:10px;--r:10px}
+  .c-feed{height:26vh;max-height:220px}
+  .c-stats{grid-template-columns:repeat(2,1fr)}
+  .c-bot{grid-template-columns:1fr 1.5fr}
+  .ach{grid-template-columns:repeat(auto-fit,minmax(60px,1fr))}
+  nav h1{font-size:18px}
+}
+
+/* ===== PHONE — 2 columns compact, scrollable ===== */
+@media(max-width:480px){
+  :root{--pad:6px;--gap:4px;--card-pad:8px;--r:8px}
+  .shell{padding:6px}
+  nav{height:28px;gap:8px}
+  nav h1{font-size:14px}
+  .pill{display:none}
+  .c-feed{height:20vh;max-height:160px}
+  .c-bot{grid-template-columns:1fr 1fr}
+  .chart{height:32px}
+  .bdg .em{font-size:12px}
+  .ach{grid-template-columns:repeat(auto-fit,minmax(52px,1fr));gap:3px}
+  .bdg{padding:3px 2px;border-radius:6px}
+}
+</style>
+</head>
+<body data-theme="dark">
+<div class="shell shell--locked">
+  <nav>
+    <h1>SARS</h1>
+    <div class="dot" id="dot"></div>
+    <div class="nav-right">
+      <div class="pill">Posture Assistant</div>
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">&#9790;</button>
+      <button class="settings-btn" onclick="openSettings()" title="Settings">&#9881;</button>
+    </div>
+  </nav>
+
+  <div class="grid">
+    <div class="c dk c-feed" style="position:relative">
+      <img id="cam" src="/api/frame" alt="Camera feed">
+      <canvas id="skel" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></canvas>
+    </div>
+
+    <div class="c dk c-score">
+      <svg class="gauge" viewBox="0 0 120 120" role="img" aria-label="Posture score">
+        <circle class="trk" cx="60" cy="60" r="50"/>
+        <circle class="arc" id="arc" cx="60" cy="60" r="50" stroke-dasharray="314.16" stroke-dashoffset="314.16" transform="rotate(-90 60 60)"/>
+        <text class="num" x="60" y="60" text-anchor="middle" dominant-baseline="central" id="sn">--</text>
+      </svg>
+      <div class="gauge-label">SCORE</div>
+      <div id="stl">--</div>
+    </div>
+
+    <div class="c wm c-status img-card">
+      <div><div class="tag">Posture</div><div class="big" id="lvl-big">--</div></div>
+      <div id="guidance" style="font:700 clamp(9px,1vh,12px) 'Geist Pixel',monospace;color:var(--wmmut);letter-spacing:.1em;text-transform:uppercase"></div>
+      <div><div class="tag">Session</div><div class="big-sm" id="tm2">0m</div></div>
+    </div>
+
+    <div class="c dk c-break">
+      <svg class="ring" viewBox="0 0 72 72">
+        <circle class="trk" cx="36" cy="36" r="30"/>
+        <circle class="arc" id="ba" cx="36" cy="36" r="30" stroke-dasharray="188.5" stroke-dashoffset="0" transform="rotate(-90 36 36)"/>
+        <text x="36" y="37" text-anchor="middle" dominant-baseline="central" id="bt">--</text>
+      </svg>
+      <div class="bm"><div class="tag">Break</div><div class="ph" id="bp">Idle</div></div>
+    </div>
+
+    <div class="c-act">
+      <button class="btn btn-c" id="btn-cal" onclick="doCal(this)"><span class="fill" id="cal-fill"></span><span id="cal-label">Calibrate</span></button>
+      <div style="display:flex;gap:var(--gap);flex:1">
+        <button class="btn btn-s" id="btn-snooze" style="flex:1" onclick="doSnooze(this)"><span class="fill"></span>Snooze</button>
+        <button class="btn" id="btn-focus" style="flex:1;background:var(--dk3);color:var(--mut)" onclick="toggleFocus()" aria-pressed="false"><span id="focus-label">Focus</span></button>
+      </div>
+    </div>
+
+    <div class="c-stats">
+      <div class="si c wm si-good"><div class="v" id="gp">--</div><div class="l">Good %</div></div>
+      <div class="si c wm si-xp"><div class="v" id="xd">--</div><div class="l">XP Today</div></div>
+      <div class="si c dk"><div class="v" id="bk">--</div><div class="l">Breaks</div></div>
+      <div class="si c dk si-level">
+        <div style="display:flex;align-items:baseline;gap:8px;width:100%">
+          <span class="ln" id="ln">--</span>
+          <span class="lv-nm" id="nm">--</span>
+        </div>
+        <div class="xb"><div class="xf" id="xf"></div></div>
+        <div class="xr"><span id="xc">0 XP</span><span id="xm">0 XP</span></div>
+        <div class="sk" id="sk"></div>
+      </div>
+    </div>
+
+    <div class="c-bot">
+      <div class="c dk">
+        <div class="sec">Past 7 Days</div>
+        <div class="chart" id="ch"><div class="empty">No history yet</div></div>
+      </div>
+      <div class="c dk">
+        <div class="sec">Achievements</div>
+        <div class="ach" id="ag"><div class="empty">Loading...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sp-overlay" id="sp-overlay" onclick="closeSettings()"></div>
+<div class="sp" id="sp" role="dialog" aria-label="Settings">
+  <div class="sp-head">
+    <h2>Settings</h2>
+    <button class="sp-close" onclick="closeSettings()">&times;</button>
+  </div>
+  <div class="sp-body">
+    <div>
+      <div class="sp-sec">Connection</div>
+      <div class="sp-row"><span class="sp-label">Camera Feed</span><span class="sp-dot" id="sp-cam"></span></div>
+      <div class="sp-row"><span class="sp-label">Posture Engine</span><span class="sp-dot" id="sp-eng"></span></div>
+      <div class="sp-row"><span class="sp-label">API Server</span><span class="sp-dot" id="sp-api"></span></div>
+      <div class="sp-hint" id="sp-conn-hint"></div>
+    </div>
+    <div class="sp-divider"></div>
+    <div>
+      <div class="sp-sec">System</div>
+      <div class="sp-row"><span class="sp-label">Stream URL</span><span class="sp-val" id="sp-url">--</span></div>
+      <div class="sp-row"><span class="sp-label">Calibrated</span><span class="sp-val" id="sp-cal">--</span></div>
+      <div class="sp-row"><span class="sp-label">Good Threshold</span><span class="sp-val" id="sp-thr-g">--</span></div>
+      <div class="sp-row"><span class="sp-label">Warn Threshold</span><span class="sp-val" id="sp-thr-w">--</span></div>
+      <div class="sp-row"><span class="sp-label">Database</span><span class="sp-val" id="sp-db">--</span></div>
+    </div>
+    <div class="sp-divider"></div>
+    <div>
+      <div class="sp-sec">Clap Sensitivity</div>
+      <div class="sp-row"><span class="sp-label">Microphone</span><span class="sp-dot" id="sp-mic"></span></div>
+      <div class="mic-auto-row">
+        <span class="sp-label">Auto Adjust</span>
+        <button class="mic-toggle" id="mic-auto-btn" onclick="toggleMicAuto()" title="Automatically adjust to your environment"></button>
+      </div>
+      <div class="mic-auto-hint" id="mic-auto-hint">Drag the line until claps light up green.</div>
+      <div class="mic-slider-wrap" id="mic-slider-wrap">
+        <div class="mic-meter" id="mic-meter">
+          <div class="mic-track">
+            <div class="mic-fill mic-fill--below" id="mic-below"></div>
+            <div class="mic-fill mic-fill--above" id="mic-above"></div>
+          </div>
+          <input type="range" class="mic-slider" id="mic-slider"
+                 min="0" max="1000" value="500" step="1"
+                 aria-label="Clap detection sensitivity">
+        </div>
+        <div class="mic-labels">
+          <span class="mic-lbl">More sensitive</span>
+          <span class="mic-status-text" id="mic-status-text">Listening...</span>
+          <span class="mic-lbl">Less sensitive</span>
+        </div>
+      </div>
+      <div class="sp-hint">Adjust until claps light up green but background noise stays yellow.</div>
+      <button class="sp-btn" id="mic-buzz-btn" onclick="testBuzzer()" style="margin-top:8px;background:var(--dk3);color:var(--mut)">Test Buzzer</button>
+    </div>
+    <div class="sp-divider"></div>
+    <div>
+      <div class="sp-sec">Accessibility</div>
+      <div class="sp-row"><span class="sp-label">Text Size</span></div>
+      <div class="a11y-seg">
+        <button class="a11y-seg-btn" data-size="small" onclick="setTextSize('small')">S</button>
+        <button class="a11y-seg-btn active" data-size="default" onclick="setTextSize('default')">M</button>
+        <button class="a11y-seg-btn" data-size="large" onclick="setTextSize('large')">L</button>
+      </div>
+      <div class="sp-row">
+        <span class="sp-label">Reduced Motion</span>
+        <button class="mic-toggle" id="a11y-motion" onclick="toggleA11y('motion')" title="Disable animations"></button>
+      </div>
+      <div class="sp-row">
+        <span class="sp-label">High Contrast</span>
+        <button class="mic-toggle" id="a11y-hc" onclick="toggleA11y('hc')" title="Increase contrast and borders"></button>
+      </div>
+      <div class="sp-row">
+        <span class="sp-label">Color-Blind Mode</span>
+        <button class="mic-toggle" id="a11y-cb" onclick="toggleA11y('cb')" title="Use blue/orange instead of green/red"></button>
+      </div>
+      <div class="sp-hint">Preferences are saved automatically.</div>
+    </div>
+    <div class="sp-divider"></div>
+    <div>
+      <div class="sp-sec">Diagnostics</div>
+      <div class="sp-row"><span class="sp-label">Poll Status</span><span class="sp-val" id="sp-poll">--</span></div>
+      <div class="sp-row"><span class="sp-label">Last Error</span><span class="sp-val" id="sp-err">None</span></div>
+      <div class="sp-hint" id="sp-fix-hint"></div>
+    </div>
+    <div class="sp-divider"></div>
+    <div>
+      <div class="sp-sec">Danger Zone</div>
+      <button class="sp-btn sp-btn-danger" onclick="showResetConfirm()">Reset All Statistics</button>
+      <div class="sp-confirm" id="sp-confirm">
+        <p>This will permanently delete all posture history, XP, level, achievements, and calibration data. This cannot be undone.</p>
+        <div class="sp-confirm-btns">
+          <button class="sp-btn sp-btn-cancel" onclick="hideResetConfirm()">Cancel</button>
+          <button class="sp-btn sp-btn-danger" id="btn-reset-confirm" onclick="doReset()">Confirm Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function getClr(){
+  var s=getComputedStyle(document.body);
+  return {
+    good:s.getPropertyValue('--grn').trim(),
+    warning:s.getPropertyValue('--amb').trim(),
+    bad:s.getPropertyValue('--red').trim(),
+    no_person:s.getPropertyValue('--dim').trim()
+  };
+}
+
+function toggleTheme(){
+  var t=document.body.dataset.theme==='light'?'dark':'light';
+  document.body.dataset.theme=t;
+  $('theme-btn').innerHTML=t==='light'?'&#9790;':'&#9728;';
+  try{localStorage.setItem('sars-theme',t)}catch(e){}
+}
+var S={},T={},lastOk=0,breakLeft=0,breakSynced=0;
+var $=function(id){return document.getElementById(id)};
+
+(function(){
+  try{
+    var t=localStorage.getItem('sars-theme');
+    if(t){document.body.dataset.theme=t}
+  }catch(e){}
+  var cur=document.body.dataset.theme||'dark';
+  $('theme-btn').innerHTML=cur==='light'?'&#9790;':'&#9728;';
+})();
+var C=314.16,BC=188.5;
+var clr=getClr();
+var lbl={good:'Good',warning:'Sit Back',bad:'Bad Posture',no_person:'No Person'};
+var cbIcons={good:'✓',warning:'⚠',bad:'✗',no_person:'—'};
+
+function fmt(s){s=Math.floor(s||0);var m=s/60|0,sc=s%60;return m+':'+(sc<10?'0':'')+sc}
+function fmtS(s){s=Math.floor(s||0);var h=s/3600|0,m=s%3600/60|0;return h?h+'h '+m+'m':m+'m'}
+
+function anim(el,to,suf){
+  suf=suf||'';var fr=parseFloat(el.textContent)||0;
+  if(Math.abs(to-fr)<.5){el.textContent=Math.round(to)+suf;return}
+  var t0=performance.now(),df=to-fr;
+  !function tk(t){var p=Math.min((t-t0)/500,1);p=1-(1-p)*(1-p)*(1-p);el.textContent=Math.round(fr+df*p)+suf;if(p<1)requestAnimationFrame(tk)}(t0);
+}
+
+function renderLive(){
+  if(S.posture_score==null)return;
+  clr=getClr();
+  var sc=Math.round(S.posture_score*100),c=clr[S.posture_level]||'#555';
+  var arc=$('arc');
+  arc.style.strokeDashoffset=C*(1-S.posture_score);arc.style.stroke=c;
+  arc.style.filter='drop-shadow(0 0 6px '+c+'55)';
+  anim($('sn'),sc);
+  var lvlKey=S.posture_level||'no_person';
+  var icon=cbIcons[lvlKey]||'';
+  $('stl').textContent=(lvlKey).toUpperCase();$('stl').style.color=c;
+  $('lvl-big').innerHTML='<span class="cb-icon">'+icon+'</span>'+(lbl[lvlKey]||'--');
+  var phase=S.break_phase||'working';
+  var ph={working:'Working',break_due:'Break!',on_break:'On Break',break_over:'Done!'};
+  $('bp').textContent=ph[phase]||phase;
+  // For working: show countdown to break. For on_break: show break remaining.
+  if(phase==='on_break'){
+    breakLeft=S.break_remaining||0;breakSynced=Date.now();
+  }else{
+    breakLeft=S.break_time_left||0;breakSynced=Date.now();
+  }
+  // Focus mode button state
+  var fb=$('btn-focus'),fl=$('focus-label');
+  if(S.focus_mode){
+    fb.style.background='var(--pur)';fb.style.color='#fff';
+    fl.textContent='Focus ON';fb.setAttribute('aria-pressed','true');
+  }else{
+    fb.style.background='var(--dk3)';fb.style.color='var(--mut)';
+    fl.textContent='Focus';fb.setAttribute('aria-pressed','false');
+  }
+  anim($('gp'),Math.round(S.session_good_pct||0),'%');
+  anim($('xd'),S.daily_xp||0);
+  $('ln').textContent=S.level||'--';$('nm').textContent=S.level_name||'--';
+  $('xc').textContent=(S.xp_in_level||0)+' XP';$('xm').textContent=(S.xp_for_next||0)+' XP';
+  $('xf').style.width=((S.level_progress||0)*100)+'%';
+  var sk=$('sk');
+  if(S.streak_days>0){sk.innerHTML='<span class="fire">\u{1f525}</span> '+S.streak_days+' day'+(S.streak_days>1?'s':'')}
+  else{sk.textContent=''}
+
+  var g=$('guidance');
+  if(S.guidance){g.textContent=S.guidance;g.style.display=''}
+  else{g.style.display='none'}
+
+  var cs=S.cal_status||'idle';
+  var cl=$('cal-label'),cf=$('cal-fill');
+  if(cs==='in_progress'){
+    var pct=Math.round((S.cal_progress||0)*100);
+    cl.textContent='Hold still... '+pct+'%';
+    cf.style.transition='width .3s linear';cf.style.width=pct+'%';
+  }else if(cs==='success'){
+    cl.textContent='Calibrated!';cf.style.width='100%';
+    setTimeout(function(){cl.textContent='Calibrate';cf.style.transition='none';cf.style.width='0'},2000);
+  }else if(cs==='failed'){
+    cl.textContent='Failed - retry';cf.style.width='0';
+    setTimeout(function(){cl.textContent='Calibrate'},2000);
+  }else{
+    if(cl.textContent!=='Calibrate'&&cl.textContent.indexOf('Hold')<0)cl.textContent='Calibrate';
+  }
+  drawSkeleton();
+}
+
+function drawSkeleton(){
+  var cv=$('skel'),ctx=cv.getContext('2d');
+  var rect=cv.parentElement.getBoundingClientRect();
+  cv.width=rect.width*2;cv.height=rect.height*2;
+  ctx.scale(2,2);
+  var w=rect.width,h=rect.height;
+  ctx.clearRect(0,0,w,h);
+  if(!S.lm||!S.lm.nose)return;
+  var lm=S.lm;
+  var nx=lm.nose[0]*w,ny=lm.nose[1]*h;
+  var lsx=lm.ls[0]*w,lsy=lm.ls[1]*h;
+  var rsx=lm.rs[0]*w,rsy=lm.rs[1]*h;
+  var lex=lm.le[0]*w,ley=lm.le[1]*h;
+  var rex=lm.re[0]*w,rey=lm.re[1]*h;
+  var mx=(lsx+rsx)/2,my=(lsy+rsy)/2;
+
+  function hexToRgba(hex,a){hex=hex.replace('#','');if(hex.length===3)hex=hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];var r=parseInt(hex.substring(0,2),16),g=parseInt(hex.substring(2,4),16),b=parseInt(hex.substring(4,6),16);return 'rgba('+r+','+g+','+b+','+a+')'}
+  var _clr=getClr();
+  function sClr(s){return s>=.7?hexToRgba(_clr.good,0.9):s>=.4?hexToRgba(_clr.warning,0.9):hexToRgba(_clr.bad,0.9)}
+
+  ctx.lineWidth=3;ctx.lineCap='round';
+
+  ctx.strokeStyle=sClr(S.tilt_score||1);
+  ctx.beginPath();ctx.moveTo(lsx,lsy);ctx.lineTo(rsx,rsy);ctx.stroke();
+
+  ctx.strokeStyle=sClr(S.slouch_score||1);
+  ctx.beginPath();ctx.moveTo(mx,my);ctx.lineTo(nx,ny);ctx.stroke();
+
+  var pts=[[nx,ny,S.slouch_score||1],[lsx,lsy,S.tilt_score||1],[rsx,rsy,S.tilt_score||1],[lex,ley,S.head_score||1],[rex,rey,S.head_score||1]];
+  for(var i=0;i<pts.length;i++){
+    ctx.fillStyle=sClr(pts[i][2]);
+    ctx.beginPath();ctx.arc(pts[i][0],pts[i][1],i<3?5:4,0,Math.PI*2);ctx.fill();
+  }
+
+  if(S.posture_level==='warning'||S.posture_level==='bad'){
+    var worst='slouch',ws=S.slouch_score||1;
+    if((S.head_score||1)<ws){worst='head';ws=S.head_score||1}
+    if((S.tilt_score||1)<ws){worst='tilt';ws=S.tilt_score||1}
+    if(ws<0.65){
+      ctx.strokeStyle=S.posture_level==='bad'?'rgba(248,113,113,0.8)':'rgba(245,158,11,0.8)';
+      ctx.lineWidth=2.5;
+      ctx.beginPath();
+      if(worst==='slouch'){
+        ctx.moveTo(nx,ny+5);ctx.lineTo(nx,ny-22);
+        ctx.moveTo(nx-6,ny-16);ctx.lineTo(nx,ny-22);ctx.lineTo(nx+6,ny-16);
+      }else if(worst==='head'){
+        var emx=(lex+rex)/2,emy=(ley+rey)/2;
+        ctx.moveTo(emx,emy);ctx.lineTo(emx-20,emy-8);
+        ctx.moveTo(emx-14,emy-14);ctx.lineTo(emx-20,emy-8);ctx.lineTo(emx-14,emy-2);
+      }else{
+        var hi=lsy>rsy?[lsx,lsy]:[rsx,rsy];
+        ctx.moveTo(hi[0],hi[1]+3);ctx.lineTo(hi[0],hi[1]-18);
+        ctx.moveTo(hi[0]-5,hi[1]-12);ctx.lineTo(hi[0],hi[1]-18);ctx.lineTo(hi[0]+5,hi[1]-12);
+      }
+      ctx.stroke();
+    }
+  }
+
+  var bw=10,bh=50,gap=14;
+  var metrics=[['S',S.slouch_score||0],['H',S.head_score||0],['T',S.tilt_score||0]];
+  var totalH=metrics.length*(bh+gap+14);
+  var bx=w-24;
+  var startY=10;
+  // Background pill
+  ctx.fillStyle='rgba(0,0,0,0.45)';
+  ctx.beginPath();
+  ctx.roundRect(bx-6,startY-4,bw+12,totalH+4,6);
+  ctx.fill();
+  for(var j=0;j<metrics.length;j++){
+    var by=startY+j*(bh+gap+14);
+    // Track
+    ctx.fillStyle='rgba(255,255,255,0.15)';
+    ctx.beginPath();ctx.roundRect(bx,by,bw,bh,3);ctx.fill();
+    // Fill
+    var fh=bh*metrics[j][1];
+    ctx.fillStyle=sClr(metrics[j][1]);
+    ctx.beginPath();ctx.roundRect(bx,by+bh-fh,bw,fh,3);ctx.fill();
+    // Label
+    ctx.fillStyle='rgba(255,255,255,0.85)';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='center';
+    ctx.fillText(metrics[j][0],bx+bw/2,by+bh+12);
+  }
+  ctx.textAlign='start';
+}
+
+function renderToday(){
+  if(T.total_sec==null)return;
+  anim($('bk'),T.breaks_taken||0);$('tm2').textContent=fmtS(T.total_sec||0);
+}
+
+var breakDuration=300;
+function tickBreak(){
+  var el=(Date.now()-breakSynced)/1000,t=Math.max(0,Math.round(breakLeft-el));
+  var phase=S.break_phase||'working';
+  if(phase==='break_due'){$('bt').textContent='!';$('ba').style.strokeDashoffset=0;return}
+  if(phase==='break_over'){$('bt').textContent='OK';$('ba').style.strokeDashoffset=0;return}
+  $('bt').textContent=t>0?fmt(t):'--';
+  var dur=breakDuration>0?breakDuration:300;
+  $('ba').style.strokeDashoffset=t>0?BC*(1-Math.min(t/dur,1)):BC;
+}
+
+function renderHist(data){
+  if(!data||!data.length){$('ch').innerHTML='<div class="empty">No history yet</div>';return}
+  var html='',days=['S','M','T','W','T','F','S'];
+  for(var i=0;i<data.length;i++){
+    var d=data[i],s=d.daily_score||0,h=Math.max(s,4);
+    var cls=s>=histGoodThresh?'g':s>=histWarnThresh?'a':'r';
+    html+='<div class="bc"><div class="bv">'+Math.round(s)+'</div><div class="bw"><div class="bar '+cls+'" style="height:'+h+'%"></div></div><span class="bl">'+days[new Date(d.date).getDay()]+'</span></div>';
+  }
+  $('ch').innerHTML=html;
+}
+
+var achData=[];
+function renderAch(data){
+  achData=data||[];
+  if(!data||!data.length){$('ag').innerHTML='<div class="empty">No achievements</div>';return}
+  var html='';
+  for(var i=0;i<data.length;i++){
+    var a=data[i],on=!!a.unlocked_at;
+    var emo=on?a.emoji:'<span style="filter:grayscale(1);opacity:.2">'+a.emoji+'</span>';
+    html+='<div class="bdg'+(on?' '+a.tier:'')+'" data-ach-idx="'+i+'" tabindex="0" role="button" onclick="showAchTip(this,'+i+')" onkeydown="achKey(event,this,'+i+')">'
+      +'<span class="bdg-info">i</span>'
+      +'<span class="em">'+emo+'</span><div class="nm">'+a.name+'</div></div>';
+  }
+  $('ag').innerHTML=html;
+}
+function showAchTip(el,idx){
+  var old=document.getElementById('ach-tip');
+  if(old){
+    if(old.dataset.idx==idx){old.remove();return}
+    old.remove();
+  }
+  var a=achData[idx];if(!a)return;
+  var on=!!a.unlocked_at;
+  var tip=document.createElement('div');
+  tip.id='ach-tip';tip.dataset.idx=idx;
+  tip.className='bdg-tip show';
+  tip.innerHTML='<div class="bdg-tip-name">'+a.name+'</div>'
+    +'<div class="bdg-tip-desc">'+a.description+'</div>'
+    +'<div class="bdg-tip-status'+(on?'':' locked')+'">'+(on?'Unlocked':'Locked')+'</div>';
+  document.body.appendChild(tip);
+  var r=el.getBoundingClientRect();
+  var tipW=tip.offsetWidth;
+  var rawLeft=Math.round(r.left+r.width/2-tipW/2);
+  var clampedLeft=Math.max(8,Math.min(rawLeft,window.innerWidth-tipW-8));
+  tip.style.left=clampedLeft+'px';
+  if(r.top>200){
+    tip.style.bottom=(window.innerHeight-r.top+8)+'px';
+  }else{
+    tip.style.top=Math.round(r.bottom+8)+'px';
+  }
+}
+function achKey(e,el,idx){if(e.key==='Enter'||e.key===' '){e.preventDefault();showAchTip(el,idx)}}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.bdg')&&!e.target.closest('#ach-tip')){
+    var t=document.getElementById('ach-tip');if(t)t.remove();
+  }
+});
+
+function toggleFocus(){
+  var newState=!(S.focus_mode||false);
+  S.focus_mode=newState;
+  var fb=$('btn-focus'),fl=$('focus-label');
+  if(newState){fb.style.background='var(--pur)';fb.style.color='#fff';fl.textContent='Focus ON';fb.setAttribute('aria-pressed','true')}
+  else{fb.style.background='var(--dk3)';fb.style.color='var(--mut)';fl.textContent='Focus';fb.setAttribute('aria-pressed','false')}
+  fetch('/api/focus',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({enabled:newState})}).catch(function(){});
+}
+
+function poll(){
+  fetch('/api/live').then(function(r){return r.json()}).then(function(d){S=d;lastOk=Date.now();renderLive();$('dot').className='dot'}).catch(function(){if(Date.now()-lastOk>6000)$('dot').className='dot off'});
+}
+function chk(r){if(!r.ok)throw new Error(r.status);return r.json()}
+function pollT(){fetch('/api/today').then(chk).then(function(d){T=d;renderToday()}).catch(function(){})}
+function pollH(){fetch('/api/history?days=7').then(chk).then(renderHist).catch(function(){})}
+function pollA(){fetch('/api/achievements').then(chk).then(renderAch).catch(function(){})}
+function post(u){fetch(u,{method:'POST'}).then(function(r){if(!r.ok)throw new Error(r.status);return r}).catch(function(){})}
+function doSnooze(b){
+  if(b.classList.contains('ld'))return;
+  b.classList.add('ld');
+  fetch('/api/snooze',{method:'POST'}).catch(function(){});
+  setTimeout(function(){b.classList.remove('ld')},1000);
+}
+
+function doCal(b){
+  if(b.classList.contains('ld'))return;
+  b.classList.add('ld');b.querySelector('.fill').style.width='0';void b.offsetWidth;
+  b.querySelector('.fill').style.width='100%';
+  fetch('/api/calibrate',{method:'POST'}).catch(function(){});
+  setTimeout(function(){b.classList.remove('ld');b.querySelector('.fill').style.transition='none';b.querySelector('.fill').style.width='0';void b.offsetWidth;b.querySelector('.fill').style.transition='width 2s linear'},2200);
+}
+
+var _intervals=[];
+function startPolling(){
+  _intervals=[
+    setInterval(function(){$('cam').src='/api/frame?t='+Date.now()},1200),
+    setInterval(poll,2000),setInterval(tickBreak,1000),
+    setInterval(pollT,8000),setInterval(pollH,30000),setInterval(pollA,30000)
+  ];
+}
+function stopPolling(){_intervals.forEach(clearInterval);_intervals=[]}
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden){stopPolling()}else{startPolling();poll();pollT();pollH();pollA()}
+});
+startPolling();
+poll();pollT();pollH();pollA();
+
+var spErrors=[],spPollOk=0,spPollFail=0;
+var spStatusInterval=null;
+
+function openSettings(){
+  $('sp').classList.add('open');$('sp-overlay').classList.add('open');
+  pollStatus();
+  if(!spStatusInterval)spStatusInterval=setInterval(pollStatus,5000);
+}
+function closeSettings(){
+  $('sp').classList.remove('open');$('sp-overlay').classList.remove('open');
+  hideResetConfirm();
+  if(spStatusInterval){clearInterval(spStatusInterval);spStatusInterval=null}
+}
+function showResetConfirm(){$('sp-confirm').classList.add('show')}
+function hideResetConfirm(){$('sp-confirm').classList.remove('show')}
+
+function doReset(){
+  fetch('/api/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target:'all'})})
+  .then(function(r){return r.json()})
+  .then(function(){
+    hideResetConfirm();
+    pollT();pollH();pollA();poll();
+    $('sp-err').textContent='Reset complete';
+  })
+  .catch(function(e){$('sp-err').textContent='Reset failed: '+e.message});
+}
+
+var histGoodThresh=65,histWarnThresh=35;
+function pollStatus(){
+  fetch('/api/status').then(chk).then(function(d){
+    if(d.good_threshold)histGoodThresh=d.good_threshold*100;
+    if(d.warning_threshold)histWarnThresh=d.warning_threshold*100;
+    if(d.work_duration)breakDuration=d.work_duration;
+    $('sp-cam').className='sp-dot '+(d.camera_ok?'ok':'err');
+    $('sp-eng').className='sp-dot '+(d.engine_ok?'ok':'err');
+    $('sp-api').className='sp-dot ok';
+    var hints=[];
+    if(!d.camera_ok)hints.push('Camera: No frames received. Check ESP32 power and WiFi, or use --webcam flag.');
+    if(!d.engine_ok)hints.push('Engine: No posture data. Ensure someone is visible in the camera frame.');
+    $('sp-conn-hint').textContent=hints.join(' ');
+    $('sp-url').textContent=d.esp32_url||'--';
+    $('sp-cal').textContent=d.calibrated?(d.calibration_date||'Yes'):'Not calibrated';
+    $('sp-thr-g').textContent=(d.good_threshold*100)+'%';
+    $('sp-thr-w').textContent=(d.warning_threshold*100)+'%';
+    $('sp-db').textContent=d.db_size_kb+' KB';
+    $('sp-poll').textContent=spPollOk+' ok / '+spPollFail+' fail';
+    if(spErrors.length>0){
+      var last=spErrors[spErrors.length-1];
+      $('sp-err').textContent=last.msg;
+      var fixes={
+        'Failed to fetch':'Server unreachable. Check if main.py is running.',
+        'NetworkError':'Network issue. Verify WiFi connection.',
+        '204':'No camera frame. ESP32 may be disconnected.',
+      };
+      var fix='';
+      for(var k in fixes){if(last.msg.indexOf(k)>=0){fix=fixes[k];break}}
+      $('sp-fix-hint').textContent=fix;
+    }else{
+      $('sp-err').textContent='None';
+      $('sp-fix-hint').textContent='';
+    }
+  }).catch(function(){
+    $('sp-api').className='sp-dot err';
+    $('sp-conn-hint').textContent='Cannot reach dashboard API. Is main.py running?';
+  });
+}
+pollStatus();
+
+poll=function(){
+  fetch('/api/live').then(chk).then(function(d){
+    S=d;lastOk=Date.now();renderLive();$('dot').className='dot';spPollOk++;
+    updateMicData(d);
+  }).catch(function(e){
+    if(Date.now()-lastOk>6000)$('dot').className='dot off';
+    spPollFail++;spErrors.push({msg:e.message||'Unknown error',t:Date.now()});
+    if(spErrors.length>20)spErrors.shift();
+  });
+};
+
+// ===== Clap Sensitivity (log-scale, Discord-style) =====
+var micRms=0,micThresh=3000,micAuto=false;
+var micSettingsOpen=false,micFastPollId=null;
+// One log scale for everything: 300-15000
+// Bar fills + slider thumb all map to the same positions
+var micRangeMin=30,micRangeMax=15000;
+var micSliderSteps=1000;
+var micUserSetAt=0,micUserSetVal=null;
+
+function rmsToPos(rms){
+  if(rms<=micRangeMin)return 0;
+  if(rms>=micRangeMax)return 1;
+  return Math.log(rms/micRangeMin)/Math.log(micRangeMax/micRangeMin);
+}
+function posToRms(p){
+  if(p<=0)return micRangeMin;
+  if(p>=1)return micRangeMax;
+  return Math.round(micRangeMin*Math.pow(micRangeMax/micRangeMin,p));
+}
+function sliderToRms(v){return posToRms(v/micSliderSteps)}
+function rmsToSlider(rms){return Math.round(rmsToPos(rms)*micSliderSteps)}
+
+function updateMicData(d){
+  if(d.mic_rms!=null)micRms=d.mic_rms;
+
+  // Threshold: use server value UNLESS user recently dragged (optimistic UI)
+  var now=Date.now();
+  if(d.mic_threshold!=null){
+    if(micUserSetVal!==null&&(now-micUserSetAt)<4000){
+      micThresh=micUserSetVal;
+    }else{
+      micThresh=d.mic_threshold;
+      micUserSetVal=null;
+      $('mic-slider').value=rmsToSlider(micThresh);
+    }
+  }
+
+  if(d.mic_auto!=null){
+    micAuto=d.mic_auto;
+    var btn=$('mic-auto-btn');
+    if(micAuto){btn.classList.add('on')}else{btn.classList.remove('on')}
+    var wrap=$('mic-slider-wrap');
+    if(micAuto){wrap.classList.add('disabled')}else{wrap.classList.remove('disabled')}
+    $('mic-auto-hint').textContent=micAuto
+      ?'Automatically adjusts to your environment.'
+      :'Drag the line until claps light up green.';
+  }
+  if(micSettingsOpen)updateMicVisuals();
+}
+
+var micDetectedTimer=0;
+function updateMicVisuals(){
+  var levelPos=rmsToPos(micRms);
+  var threshPos=rmsToPos(micThresh);
+  var threshPct=(threshPos*100).toFixed(1)+'%';
+  var levelPct=(levelPos*100).toFixed(1)+'%';
+
+  // Below-threshold fill (amber): shows level up to the threshold
+  var belowPct=(Math.min(levelPos,threshPos)*100).toFixed(1)+'%';
+  $('mic-below').style.width=belowPct;
+
+  // Above-threshold fill (green): the portion past the threshold
+  if(levelPos>threshPos){
+    $('mic-above').style.width=levelPct;
+    $('mic-above').style.clipPath='inset(0 0 0 '+threshPct+')';
+  }else{
+    $('mic-above').style.width='0';
+    $('mic-above').style.clipPath='none';
+  }
+
+  // Status text: flash "Clap detected!" when peak crosses threshold
+  var st=$('mic-status-text');
+  var now=Date.now();
+  if(micRms>micThresh*0.8){
+    st.textContent='Clap detected!';
+    st.classList.add('detected');
+    micDetectedTimer=now;
+  }else if(now-micDetectedTimer>1200){
+    st.textContent='Listening...';
+    st.classList.remove('detected');
+  }
+
+  // Mic status dot
+  var dot=$('sp-mic');
+  if(dot){
+    dot.className='sp-dot '+(micRms>0?'ok':'warn');
+  }
+}
+
+// Slider: log-scale mapping
+$('mic-slider').addEventListener('input',function(){
+  micThresh=sliderToRms(parseInt(this.value));
+  micUserSetVal=micThresh;
+  micUserSetAt=Date.now();
+  updateMicVisuals();
+});
+$('mic-slider').addEventListener('change',function(){
+  var rms=sliderToRms(parseInt(this.value));
+  micThresh=rms;
+  micUserSetVal=rms;
+  micUserSetAt=Date.now();
+  // Send DIRECTLY to ESP32 for immediate effect (no PC delay)
+  if(esp32Ip){
+    fetch('http://'+esp32Ip+'/config',{method:'POST',mode:'cors',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({threshold:rms})}).catch(function(){});
+  }
+  // Also tell PC so it stays in sync
+  fetch('/api/mic-config',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({threshold:rms})}).catch(function(){});
+});
+
+function toggleMicAuto(){
+  micAuto=!micAuto;
+  var btn=$('mic-auto-btn');
+  if(micAuto){btn.classList.add('on')}else{btn.classList.remove('on')}
+  var wrap=$('mic-slider-wrap');
+  if(micAuto){wrap.classList.add('disabled')}else{wrap.classList.remove('disabled')}
+  $('mic-auto-hint').textContent=micAuto
+    ?'Automatically adjusts to your environment.'
+    :'Drag the line until claps light up green.';
+  // Send DIRECTLY to ESP32
+  if(esp32Ip){
+    fetch('http://'+esp32Ip+'/config',{method:'POST',mode:'cors',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({auto:micAuto})}).catch(function(){});
+  }
+  fetch('/api/mic-config',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({auto:micAuto})}).catch(function(){});
+}
+
+function testBuzzer(){
+  var btn=$('mic-buzz-btn');
+  btn.textContent='Beeping...';
+  var url=esp32Ip?'http://'+esp32Ip+'/buzzer':null;
+  if(url){
+    fetch(url,{mode:'cors'}).then(function(r){return r.json()}).then(function(d){
+      btn.textContent=d.ok?'Buzzer OK!':'No response';
+      setTimeout(function(){btn.textContent='Test Buzzer'},2000);
+    }).catch(function(){
+      btn.textContent='ESP32 unreachable';
+      setTimeout(function(){btn.textContent='Test Buzzer'},2000);
+    });
+  }else{
+    btn.textContent='No ESP32 IP';
+    setTimeout(function(){btn.textContent='Test Buzzer'},2000);
+  }
+}
+
+// Direct ESP32 polling for real-time audio (bypasses PC for ~10fps updates)
+var esp32Ip=null;
+var _openSettings=openSettings;
+openSettings=function(){
+  _openSettings();
+  micSettingsOpen=true;
+  $('mic-slider').value=rmsToSlider(micThresh);
+  updateMicVisuals();
+  // Get ESP32 IP from PC, then poll ESP32 directly
+  if(!esp32Ip){
+    fetch('/api/status').then(function(r){return r.json()}).then(function(d){
+      if(d.state_url){
+        var m=d.state_url.match(/\/\/([^:/]+)/);
+        if(m)esp32Ip=m[1];
+      }
+      if(!esp32Ip&&d.esp32_url){
+        var m2=d.esp32_url.match(/\/\/([^:/]+)/);
+        if(m2)esp32Ip=m2[1];
+      }
+      startDirectPoll();
+    }).catch(function(){startDirectPoll()});
+  }else{
+    startDirectPoll();
+  }
+};
+function startDirectPoll(){
+  if(micFastPollId)return;
+  micFastPollId=setInterval(function(){
+    // Try direct ESP32 poll first (real-time ~100ms), fall back to PC
+    if(esp32Ip){
+      fetch('http://'+esp32Ip+'/status',{mode:'cors'}).then(function(r){return r.json()}).then(function(d){
+        // ESP32 /status uses different field names than PC /api/live
+        micRms=d.peak||d.rms||0;  // use peak for bar (captures clap spikes)
+        if(d.clapThreshold!=null){
+          var now=Date.now();
+          if(micUserSetVal!==null&&(now-micUserSetAt)<4000){
+            micThresh=micUserSetVal;
+          }else{
+            micThresh=d.clapThreshold;
+            micUserSetVal=null;
+            $('mic-slider').value=rmsToSlider(micThresh);
+          }
+        }
+        if(d.micAuto!=null){
+          micAuto=d.micAuto;
+          var btn=$('mic-auto-btn');
+          if(micAuto){btn.classList.add('on')}else{btn.classList.remove('on')}
+          var wrap=$('mic-slider-wrap');
+          if(micAuto){wrap.classList.add('disabled')}else{wrap.classList.remove('disabled')}
+          $('mic-auto-hint').textContent=micAuto
+            ?'Automatically adjusts to your environment.'
+            :'Drag the line until claps light up green.';
+        }
+        updateMicVisuals();
+      }).catch(function(){
+        // ESP32 unreachable, fall back to PC
+        fetch('/api/live').then(function(r){return r.json()}).then(function(d){
+          updateMicData(d);
+        }).catch(function(){});
+      });
+    }else{
+      fetch('/api/live').then(function(r){return r.json()}).then(function(d){
+        updateMicData(d);
+      }).catch(function(){});
+    }
+  },100);
+}
+var _closeSettings=closeSettings;
+closeSettings=function(){
+  _closeSettings();
+  micSettingsOpen=false;
+  if(micFastPollId){clearInterval(micFastPollId);micFastPollId=null}
+};
+
+// Settings panel: Escape key close + focus trap
+document.addEventListener('keydown',function(e){
+  var sp=$('sp');
+  if(!sp.classList.contains('open'))return;
+  if(e.key==='Escape'){e.preventDefault();closeSettings();return}
+  if(e.key==='Tab'){
+    var focusable=sp.querySelectorAll('button,input,[tabindex]:not([tabindex="-1"])');
+    if(!focusable.length)return;
+    var first=focusable[0],last=focusable[focusable.length-1];
+    if(e.shiftKey){if(document.activeElement===first){e.preventDefault();last.focus()}}
+    else{if(document.activeElement===last){e.preventDefault();first.focus()}}
+  }
+});
+
+// Reset includes mic threshold
+doReset=function(){
+  var rb=$('btn-reset-confirm');
+  rb.disabled=true;rb.style.opacity='.5';rb.textContent='Resetting...';
+  fetch('/api/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target:'all'})})
+  .then(chk)
+  .then(function(){
+    hideResetConfirm();
+    pollT();pollH();pollA();poll();
+    micThresh=80;micAuto=false;micUserSetVal=null;
+    $('mic-slider').value=rmsToSlider(80);
+    $('mic-auto-btn').classList.remove('on');
+    $('mic-slider-wrap').classList.remove('disabled');
+    $('mic-auto-hint').textContent='Drag the line until claps light up green.';
+    updateMicVisuals();
+    $('sp-err').textContent='Reset complete';
+  })
+  .catch(function(e){$('sp-err').textContent='Reset failed: '+e.message})
+  .finally(function(){rb.disabled=false;rb.style.opacity='';rb.textContent='Confirm Reset'});
+};
+
+// ===== Accessibility =====
+function setTextSize(size){
+  var b=document.body;
+  if(size==='small')b.dataset.a11yText='small';
+  else if(size==='large')b.dataset.a11yText='large';
+  else delete b.dataset.a11yText;
+  document.querySelectorAll('.a11y-seg-btn').forEach(function(btn){
+    btn.classList.toggle('active',btn.dataset.size===size);
+  });
+  try{localStorage.setItem('sars-a11y-text',size)}catch(e){}
+}
+
+function toggleA11y(key){
+  var b=document.body;
+  var attr='a11y'+(key==='motion'?'Motion':key==='hc'?'Hc':'Cb');
+  var btn=$('a11y-'+key);
+  var isOn=b.dataset[attr]==='on';
+  if(isOn){
+    delete b.dataset[attr];
+    btn.classList.remove('on');
+  }else{
+    b.dataset[attr]='on';
+    btn.classList.add('on');
+  }
+  try{localStorage.setItem('sars-a11y-'+key,isOn?'off':'on')}catch(e){}
+  if(key==='cb'){clr=getClr()}
+}
+
+// Load saved accessibility preferences on page load
+(function(){
+  try{
+    var txt=localStorage.getItem('sars-a11y-text');
+    if(txt&&txt!=='default')setTextSize(txt);
+    ['motion','hc','cb'].forEach(function(key){
+      var v=localStorage.getItem('sars-a11y-'+key);
+      if(v==='on'){
+        var b=document.body;
+        var attr='a11y'+(key==='motion'?'Motion':key==='hc'?'Hc':'Cb');
+        b.dataset[attr]='on';
+        var btn=$('a11y-'+key);
+        if(btn)btn.classList.add('on');
+      }
+    });
+  }catch(e){}
+})();
+</script>
+</body>
+</html>
