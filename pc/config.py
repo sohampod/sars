@@ -14,11 +14,6 @@ class Config:
     min_landmark_confidence: float = 0.5
     ear_confidence_threshold: float = 0.6
 
-    # Escalation timing (seconds of continuous bad posture before each level)
-    warning_delay_sec: float = 5.0
-    bad_delay_sec: float = 15.0
-    buzzer_delay_sec: float = 30.0
-
     # Break timer (Pomodoro-based)
     work_duration_sec: int = 1500           # 25 min work session
     break_duration_sec: int = 300           # 5 min break
@@ -26,7 +21,6 @@ class Config:
     absence_threshold_sec: int = 10         # seconds absent before auto-break
 
     # Calibration
-    calibration_frames: int = 30
     calibration_duration_sec: float = 2.5
     calibration_file: str = "calibration.json"
 

@@ -419,6 +419,3 @@ class GamificationEngine:
             "session_id": self._session_id,
         }
 
-    def pop_events(self) -> list:
-        with self._lock:
-            return self._flush_events()

@@ -46,88 +46,6 @@ def _webcam_frames(camera_index=0):
         cap.release()
 
 
-def _n2px(nxy, w, h):
-    return (int(nxy[0] * w), int(nxy[1] * h))
-
-
-def _draw_arrow(img, start, direction, length, color, thickness=2):
-    end = (start[0] + int(direction[0] * length),
-           start[1] + int(direction[1] * length))
-    cv2.arrowedLine(img, start, end, color, thickness, tipLength=0.35)
-
-
-def draw_overlay(frame, state):
-    if not state.landmarks_visible:
-        return frame
-
-    out = frame.copy()
-    h, w = out.shape[:2]
-
-    nose = _n2px(state.nose_nxy, w, h)
-    ls = _n2px(state.l_shoulder_nxy, w, h)
-    rs = _n2px(state.r_shoulder_nxy, w, h)
-    mid_s = ((ls[0] + rs[0]) // 2, (ls[1] + rs[1]) // 2)
-
-    overlay = out.copy()
-
-    def score_color(s):
-        if s >= 0.7:
-            return (74, 222, 128)
-        if s >= 0.4:
-            return (11, 158, 245)
-        return (113, 113, 248)
-
-    shoulder_clr = score_color(state.tilt_score)
-    cv2.line(overlay, ls, rs, shoulder_clr, 3, cv2.LINE_AA)
-
-    spine_clr = score_color(state.slouch_score)
-    cv2.line(overlay, mid_s, nose, spine_clr, 3, cv2.LINE_AA)
-
-    cv2.circle(overlay, nose, 5, spine_clr, -1, cv2.LINE_AA)
-    cv2.circle(overlay, ls, 5, shoulder_clr, -1, cv2.LINE_AA)
-    cv2.circle(overlay, rs, 5, shoulder_clr, -1, cv2.LINE_AA)
-
-    le = _n2px(state.l_ear_nxy, w, h)
-    re = _n2px(state.r_ear_nxy, w, h)
-    head_clr = score_color(state.head_score)
-    cv2.circle(overlay, le, 4, head_clr, -1, cv2.LINE_AA)
-    cv2.circle(overlay, re, 4, head_clr, -1, cv2.LINE_AA)
-
-    cv2.addWeighted(overlay, 0.7, out, 0.3, 0, out)
-
-    if state.level in (state.level.WARNING, state.level.BAD):
-        worst = min(
-            ('slouch', state.slouch_score),
-            ('head', state.head_score),
-            ('tilt', state.tilt_score),
-            key=lambda x: x[1],
-        )
-        arrow_color = (0, 180, 255) if state.level == state.level.WARNING else (80, 80, 255)
-        if worst[0] == 'slouch' and worst[1] < 0.65:
-            _draw_arrow(out, (nose[0], nose[1] + 10), (0, -1), 30, arrow_color, 2)
-        elif worst[0] == 'head' and worst[1] < 0.65:
-            ear_mid = ((le[0] + re[0]) // 2, (le[1] + re[1]) // 2)
-            _draw_arrow(out, ear_mid, (-0.7, -0.3), 25, arrow_color, 2)
-        elif worst[0] == 'tilt' and worst[1] < 0.65:
-            higher = ls if ls[1] > rs[1] else rs
-            _draw_arrow(out, higher, (0, -1), 20, arrow_color, 2)
-
-    bar_x = w - 30
-    bar_h = 40
-    bar_w = 6
-    for i, (label, sc) in enumerate([('S', state.slouch_score), ('H', state.head_score), ('T', state.tilt_score)]):
-        y_base = 20 + i * (bar_h + 12)
-        cv2.rectangle(out, (bar_x - 1, y_base), (bar_x + bar_w + 1, y_base + bar_h), (40, 40, 40), -1)
-        fill_h = int(bar_h * sc)
-        clr = score_color(sc)
-        if fill_h > 0:
-            cv2.rectangle(out, (bar_x, y_base + bar_h - fill_h), (bar_x + bar_w, y_base + bar_h), clr, -1)
-        cv2.putText(out, label, (bar_x - 2, y_base + bar_h + 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.3, (180, 180, 180), 1, cv2.LINE_AA)
-
-    return out
-
-
 def main():
     parser = argparse.ArgumentParser(description="SARS Posture Monitor")
     parser.add_argument("--webcam", action="store_true", help="Use PC webcam")
@@ -213,6 +131,7 @@ def main():
                     success = engine.calibrate(cal_frames)
                     if success:
                         engine.save_calibration(config.calibration_file)
+                        gamification.on_calibration()
                         print("[SARS] Calibration complete.")
                         if dashboard:
                             dashboard.update_calibration('success', 1.0)

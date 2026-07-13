@@ -138,13 +138,6 @@ class BreakTimer:
             self._person_gone_since = None
             self._person_visible_ticks = 0
 
-    def acknowledge_break(self) -> None:
-        if self._phase != BreakPhase.BREAK_DUE:
-            return
-        self._phase = BreakPhase.ON_BREAK
-        self._break_start = time.time()
-        self._breaks_taken += 1
-
     def _start_new_cycle(self) -> None:
         self._work_start = time.time()
         self._break_start = None

@@ -195,7 +195,6 @@ class StateSender:
                     self._esp32_threshold = resp_data.get('thresh', self._esp32_threshold)
                     self._esp32_noise_floor = resp_data.get('floor', self._esp32_noise_floor)
                     self._esp32_mic_auto = resp_data.get('mic_auto', self._esp32_mic_auto)
-                    # not used rn, just storing it
                     self._esp32_peak = resp_data.get('peak', 0)
                 return True
             return False

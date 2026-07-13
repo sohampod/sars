@@ -348,9 +348,6 @@ class PostureEngine:
         )
         return True
 
-    def is_calibrated(self) -> bool:
-        return self._calibration is not None
-
     def save_calibration(self, path: str) -> None:
         if self._calibration is None:
             return

@@ -130,10 +130,6 @@ class DataLogger:
         except sqlite3.Error as e:
             print(f"[DB] Error: {e}")
 
-    def get_state(self, key):
-        row = self.conn.execute('SELECT value FROM user_state WHERE key=?', (key,)).fetchone()
-        return row['value'] if row else None
-
     def set_state(self, key, value):
         try:
             ts = datetime.now(timezone.utc).isoformat()
@@ -152,16 +148,6 @@ class DataLogger:
             self.conn.execute(
                 'UPDATE achievements SET unlocked_at=? WHERE id=?',
                 (ts, achievement_id),
-            )
-            self.conn.commit()
-        except sqlite3.Error as e:
-            print(f"[DB] Error: {e}")
-
-    def update_achievement_progress(self, achievement_id, progress):
-        try:
-            self.conn.execute(
-                'UPDATE achievements SET progress=? WHERE id=?',
-                (float(progress), achievement_id),
             )
             self.conn.commit()
         except sqlite3.Error as e:
