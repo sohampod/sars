@@ -2,9 +2,6 @@
 
 A desktop posture monitor that uses an ESP32-S3 camera and MediaPipe pose estimation to track your sitting posture in real time. Built for the Interactive Systems course at Saarland University.
 
-![Dashboard Screenshot](docs/screenshot.png)
-<!-- Replace with an actual screenshot of the dashboard -->
-
 ## Features
 
 ### Posture Detection
