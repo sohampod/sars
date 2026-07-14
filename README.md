@@ -337,6 +337,38 @@ Make sure the camera can see your upper body (head and both shoulders). Avoid st
 **Clap detection not working**
 Open the dashboard settings and adjust the mic sensitivity slider. The auto-sensitivity mode tries to adapt to your environment, but manual tuning may work better in noisy rooms.
 
+## Security
+
+SARS is designed for **local network use only**. All communication between the ESP32 and PC happens over your local WiFi — no data is sent to the cloud.
+
+### Privacy
+
+- Camera frames are processed locally on your PC by MediaPipe and never stored or transmitted beyond the local network
+- Posture scores are saved to a local SQLite database on your PC
+- The MJPEG stream is accessible to anyone on the same WiFi network — use a private network
+
+### API Key Authentication
+
+The ESP32 endpoints that modify state (`/state`, `/config`, `/buzzer`) support API key authentication:
+
+1. Set an API key in `credentials.h`:
+   ```c
+   const char* API_KEY = "your-secret-key-here";
+   ```
+
+2. Pass the same key when running the PC software:
+   ```bash
+   python3 main.py --url http://<IP>:81/stream --key your-secret-key-here
+   ```
+
+3. Leave `API_KEY` empty to disable authentication (default for development)
+
+### Network Recommendations
+
+- Use a private WiFi network (not public/shared networks)
+- The dashboard binds to `localhost` — only accessible from the PC running the software
+- The ESP32 camera stream (port 81) is unencrypted — this is a hardware limitation of the ESP32-S3
+
 ## License
 
 MIT

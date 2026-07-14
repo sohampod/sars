@@ -5,6 +5,7 @@ from dataclasses import dataclass
 class Config:
     esp32_stream_url: str = "http://192.168.0.10:81/stream"
     esp32_state_url: str = "http://192.168.0.10/state"
+    esp32_api_key: str = ""
     stream_timeout: float = 10.0
 
     model_path: str = "models/pose_landmarker_lite.task"

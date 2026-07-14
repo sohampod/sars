@@ -119,6 +119,26 @@ uint32_t g_lastOledUpdateMs = 0;
 bool g_oledForceUpdate = true;  // force first draw
 
 // ================================================================
+//  API AUTH CHECK
+// ================================================================
+
+static bool checkAuth(httpd_req_t *req) {
+    if (strlen(API_KEY) == 0) return true;
+    char buf[128] = {0};
+    if (httpd_req_get_hdr_value_str(req, "X-API-Key", buf, sizeof(buf)) != ESP_OK) {
+        httpd_resp_set_status(req, "401 Unauthorized");
+        httpd_resp_sendstr(req, "Missing API key");
+        return false;
+    }
+    if (strcmp(buf, API_KEY) != 0) {
+        httpd_resp_set_status(req, "403 Forbidden");
+        httpd_resp_sendstr(req, "Invalid API key");
+        return false;
+    }
+    return true;
+}
+
+// ================================================================
 //  NEOPIXEL FEEDBACK
 // ================================================================
 
@@ -536,6 +556,7 @@ esp_err_t streamHandler(httpd_req_t* req) {
 // ================================================================
 
 esp_err_t stateHandler(httpd_req_t* req) {
+  if (!checkAuth(req)) return ESP_OK;
   char buf[512];
   int len = httpd_req_recv(req, buf, sizeof(buf) - 1);
   if (len <= 0) {
@@ -728,6 +749,7 @@ esp_err_t statusHandler(httpd_req_t* req) {
 // ================================================================
 
 esp_err_t configHandler(httpd_req_t* req) {
+  if (!checkAuth(req)) return ESP_OK;
   char buf[256];
   int len = httpd_req_recv(req, buf, sizeof(buf) - 1);
   if (len <= 0) {
@@ -776,7 +798,7 @@ esp_err_t configHandler(httpd_req_t* req) {
 esp_err_t configOptionsHandler(httpd_req_t* req) {
   httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
   httpd_resp_set_hdr(req, "Access-Control-Allow-Methods", "POST, OPTIONS");
-  httpd_resp_set_hdr(req, "Access-Control-Allow-Headers", "Content-Type");
+  httpd_resp_set_hdr(req, "Access-Control-Allow-Headers", "Content-Type, X-API-Key");
   httpd_resp_send(req, "", 0);
   return ESP_OK;
 }
@@ -786,6 +808,7 @@ esp_err_t configOptionsHandler(httpd_req_t* req) {
 // ================================================================
 
 esp_err_t buzzerHandler(httpd_req_t* req) {
+  if (!checkAuth(req)) return ESP_OK;
   ensureBuzzerPin();
 
   // Single short test beep — 100ms, non-blocking for httpd thread

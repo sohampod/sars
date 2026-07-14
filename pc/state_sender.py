@@ -17,8 +17,9 @@ class ButtonEvent:
 
 
 class StateSender:
-    def __init__(self, url: str, send_interval: float = 1.0, keepalive_interval: float = 5.0):
+    def __init__(self, url: str, api_key: str = "", send_interval: float = 1.0, keepalive_interval: float = 5.0):
         self._url = url
+        self._api_key = api_key
         self._send_interval = send_interval
         self._keepalive_interval = keepalive_interval
         self._lock = threading.Lock()
@@ -168,10 +169,13 @@ class StateSender:
             data['daily_total_min'] = gam.get('daily_total_min', 0)
         payload = json.dumps(data, separators=(',', ':'))
         try:
+            headers = {"Content-Type": "application/json"}
+            if self._api_key:
+                headers["X-API-Key"] = self._api_key
             resp = requests.post(
                 self._url,
                 data=payload,
-                headers={"Content-Type": "application/json"},
+                headers=headers,
                 timeout=2,
             )
             if resp.status_code == 200:

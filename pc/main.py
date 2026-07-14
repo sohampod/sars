@@ -51,6 +51,7 @@ def main():
     parser.add_argument("--webcam", action="store_true", help="Use PC webcam")
     parser.add_argument("--camera", type=int, default=0, help="Webcam index")
     parser.add_argument("--url", type=str, default=None, help="ESP32 stream URL override")
+    parser.add_argument("--key", type=str, default="", help="ESP32 API key for authenticated endpoints")
     parser.add_argument("--no-dashboard", action="store_true", help="Skip web dashboard")
     parser.add_argument("--port", type=int, default=None, help="Dashboard port override")
     args = parser.parse_args()
@@ -61,6 +62,8 @@ def main():
     config.db_path = os.path.join(_HERE, config.db_path)
     if args.url:
         config.esp32_stream_url = args.url
+    if args.key:
+        config.esp32_api_key = args.key
 
     print("[SARS] Initializing posture engine...")
     engine = PostureEngine(
@@ -80,7 +83,7 @@ def main():
         except (IndexError, ValueError):
             print(f"[SARS] Malformed --url '{args.url}', using default state URL")
 
-    sender = StateSender(config.esp32_state_url)
+    sender = StateSender(config.esp32_state_url, api_key=config.esp32_api_key)
     sender.start()
 
     db = DataLogger(config.db_path)

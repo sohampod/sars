@@ -116,7 +116,10 @@ class Dashboard:
             try:
                 import requests as req
                 base = self.config.esp32_state_url.rsplit('/', 1)[0]
-                req.post(base + '/buzzer', timeout=1)
+                headers = {}
+                if hasattr(self.config, 'esp32_api_key') and self.config.esp32_api_key:
+                    headers['X-API-Key'] = self.config.esp32_api_key
+                req.post(base + '/buzzer', headers=headers, timeout=1)
             except Exception:
                 pass
             return jsonify({'ok': True})
@@ -133,8 +136,10 @@ class Dashboard:
                 return jsonify({'ok': False, 'error': 'no timer'}), 400
             data = request.json or {}
             enabled = data.get('enabled', False)
-            self._break_timer_ref.set_focus_mode(bool(enabled))
-            return jsonify({'ok': True, 'focus': bool(enabled)})
+            if not isinstance(enabled, bool):
+                return jsonify({'ok': False, 'error': 'enabled must be a boolean'}), 400
+            self._break_timer_ref.set_focus_mode(enabled)
+            return jsonify({'ok': True, 'focus': enabled})
 
         @app.post('/api/mic-config')
         def mic_config():
@@ -147,18 +152,24 @@ class Dashboard:
                     try:
                         threshold = int(threshold)
                     except (ValueError, TypeError):
-                        return jsonify({'ok': False, 'error': 'threshold must be numeric'}), 400
-                    threshold = max(self.config.clap_threshold_min,
-                                    min(self.config.clap_threshold_max, threshold))
+                        return jsonify({'ok': False, 'error': 'threshold must be an integer'}), 400
+                    if not (self.config.clap_threshold_min <= threshold <= self.config.clap_threshold_max):
+                        return jsonify({'ok': False, 'error': f'threshold must be between {self.config.clap_threshold_min} and {self.config.clap_threshold_max}'}), 400
                     self._sender.set_clap_threshold(threshold)
                     return jsonify({'ok': True, 'threshold': threshold})
                 if auto is not None:
-                    try:
-                        mult = float(multiplier) if multiplier is not None else None
-                    except (ValueError, TypeError):
-                        return jsonify({'ok': False, 'error': 'multiplier must be numeric'}), 400
-                    self._sender.set_mic_auto(bool(auto), mult)
-                    return jsonify({'ok': True, 'auto': bool(auto)})
+                    if not isinstance(auto, bool):
+                        return jsonify({'ok': False, 'error': 'auto must be a boolean'}), 400
+                    mult = None
+                    if multiplier is not None:
+                        try:
+                            mult = float(multiplier)
+                        except (ValueError, TypeError):
+                            return jsonify({'ok': False, 'error': 'multiplier must be a number'}), 400
+                        if not (1.0 <= mult <= 20.0):
+                            return jsonify({'ok': False, 'error': 'multiplier must be between 1.0 and 20.0'}), 400
+                    self._sender.set_mic_auto(auto, mult)
+                    return jsonify({'ok': True, 'auto': auto})
             return jsonify({'ok': False, 'error': 'no sender'}), 400
 
         @app.get('/api/frame')
@@ -207,6 +218,9 @@ class Dashboard:
         @app.post('/api/reset')
         def reset():
             target = request.json.get('target', 'all') if request.json else 'all'
+            valid_targets = ('all', 'stats', 'gamification', 'calibration', 'mic')
+            if target not in valid_targets:
+                return jsonify({'ok': False, 'error': f'target must be one of {valid_targets}'}), 400
             if target in ('all', 'stats'):
                 self.db.conn.executescript('''
                     DELETE FROM posture_log;
@@ -230,7 +244,7 @@ class Dashboard:
             return jsonify({'ok': True, 'reset': target})
 
     def start(self):
-        self._srv = make_server('0.0.0.0', self.config.dashboard_port, self.app)
+        self._srv = make_server('127.0.0.1', self.config.dashboard_port, self.app)
         t = threading.Thread(target=self._srv.serve_forever, daemon=True)
         t.start()
 
