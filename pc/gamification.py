@@ -11,24 +11,24 @@ from data_logger import DataLogger
 LEVELS = [
     (1, 50, "Slouch Recruit", "Recruit"),
     (2, 150, "Spine Cadet", "Cadet"),
-    (3, 300, "Posture Novice", "Novice"),
-    (4, 500, "Back Apprentice", "Apprentice"),
-    (5, 800, "Alignment Adept", "Adept"),
-    (6, 1200, "Core Keeper", "Keeper"),
-    (7, 1700, "Spine Sentinel", "Sentinel"),
-    (8, 2400, "Posture Knight", "Knight"),
-    (9, 3200, "Vertebral Vanguard", "Vanguard"),
-    (10, 4200, "Iron Back", "IronBack"),
-    (11, 5500, "Alignment Ace", "Ace"),
-    (12, 7000, "Core Commander", "Commander"),
-    (13, 8800, "Spine Sovereign", "Sovereign"),
-    (14, 11000, "Posture Paladin", "Paladin"),
-    (15, 13500, "Ergo Elite", "Elite"),
-    (16, 16500, "Zen Spine", "ZenSpine"),
-    (17, 20000, "Alignment Archon", "Archon"),
-    (18, 24000, "Posture Paragon", "Paragon"),
-    (19, 28500, "Iron Throne", "IronThrone"),
-    (20, 34000, "Spine Grandmaster", "Grandmaster"),
+    (3, 299, "Posture Novice", "Novice"),
+    (4, 496, "Back Apprentice", "Apprentice"),
+    (5, 806, "Alignment Adept", "Adept"),
+    (6, 1211, "Core Keeper", "Keeper"),
+    (7, 1745, "Spine Sentinel", "Sentinel"),
+    (8, 2359, "Posture Knight", "Knight"),
+    (9, 3280, "Vertebral Vanguard", "Vanguard"),
+    (10, 4268, "Iron Back", "IronBack"),
+    (11, 5419, "Alignment Ace", "Ace"),
+    (12, 7196, "Core Commander", "Commander"),
+    (13, 8897, "Spine Sovereign", "Sovereign"),
+    (14, 11140, "Posture Paladin", "Paladin"),
+    (15, 13677, "Ergo Elite", "Elite"),
+    (16, 16445, "Zen Spine", "ZenSpine"),
+    (17, 20094, "Alignment Archon", "Archon"),
+    (18, 24358, "Posture Paragon", "Paragon"),
+    (19, 29036, "Iron Throne", "IronThrone"),
+    (20, 33707, "Spine Grandmaster", "Grandmaster"),
 ]
 
 _ACHIEVEMENTS = {
@@ -44,8 +44,8 @@ _ACHIEVEMENTS = {
     "grandmaster": "Grandmaster",
 }
 
-XP_GOOD = 0.1667
-XP_BAD = -0.0833
+XP_GOOD = 0.1788
+XP_BAD = -0.0978
 
 
 @dataclass(frozen=True)

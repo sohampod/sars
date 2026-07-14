@@ -254,13 +254,13 @@ class PostureEngine:
 
         if not np.isnan(head_forward_ratio) and cal.head_forward_ratio > 0.01:
             deviation = abs(head_forward_ratio - cal.head_forward_ratio)
-            secondary = max(0.0, 1.0 - deviation * 3.5)
+            secondary = max(0.0, 1.0 - deviation * 3.88)
         else:
             secondary = float("nan")
 
         if cal.shoulder_tilt > 0.001:
             tilt_deviation = abs(shoulder_tilt - cal.shoulder_tilt)
-            tertiary = max(0.0, 1.0 - tilt_deviation * 8.0)
+            tertiary = max(0.0, 1.0 - tilt_deviation * 7.33)
         else:
             tertiary = max(0.0, 1.0 - shoulder_tilt * 8.0)
 
