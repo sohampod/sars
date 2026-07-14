@@ -250,9 +250,6 @@ All parameters live in `pc/config.py`:
 | `good_threshold` | `0.7` | Score at or above this = good posture |
 | `warning_threshold` | `0.4` | Score below this = bad posture |
 | `min_landmark_confidence` | `0.5` | MediaPipe detection confidence floor |
-| `warning_delay_sec` | `5.0` | Seconds of poor posture before warning |
-| `bad_delay_sec` | `15.0` | Seconds before escalating to bad |
-| `buzzer_delay_sec` | `30.0` | Seconds before buzzer activates |
 | `work_duration_sec` | `1500` | Work session length (25 min) |
 | `break_duration_sec` | `300` | Break length (5 min) |
 | `snooze_duration_sec` | `300` | Snooze delay (5 min) |
