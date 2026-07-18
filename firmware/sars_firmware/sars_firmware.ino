@@ -9,9 +9,7 @@
 #include <Preferences.h>
 #include "credentials.h"
 
-// ================================================================
-//  KAMERA-PINS — OV2640 auf XIAO ESP32-S3 Sense
-// ================================================================
+// Camera pins (OV2640, XIAO ESP32-S3 Sense)
 #define PWDN_GPIO_NUM   -1
 #define RESET_GPIO_NUM  -1
 #define XCLK_GPIO_NUM    10
@@ -29,11 +27,7 @@
 #define HREF_GPIO_NUM    47
 #define PCLK_GPIO_NUM    13
 
-// ================================================================
-//  KONFIGURATION
-// ================================================================
-
-// Pins
+// --- Pins and config ---
 const int PIN_SDA        = 5;   // D4 (GPIO5) — OLED SDA
 const int PIN_SCL        = 6;   // D5 (GPIO6) — OLED SCL
 const int PIN_BUZZER     = 4;   // D3 (GPIO4) — active-HIGH
@@ -118,10 +112,6 @@ char g_lastOledBreakText[64] = "";
 uint32_t g_lastOledUpdateMs = 0;
 bool g_oledForceUpdate = true;  // force first draw
 
-// ================================================================
-//  API AUTH CHECK
-// ================================================================
-
 static bool checkAuth(httpd_req_t *req) {
     if (strlen(API_KEY) == 0) return true;
     char buf[128] = {0};
@@ -138,10 +128,7 @@ static bool checkAuth(httpd_req_t *req) {
     return true;
 }
 
-// ================================================================
-//  NEOPIXEL FEEDBACK
-// ================================================================
-
+// NeoPixel colors
 void updateNeoPixels() {
   uint32_t color;
   switch (g_postureLevel) {
@@ -194,12 +181,8 @@ void updateNeoPixels() {
   strip.show();
 }
 
-// ================================================================
-//  BUZZER — non-blocking state machine
-// ================================================================
+// Buzzer
 
-// Ensure GPIO4 is configured as output for buzzer.
-// Runs once at first call to guarantee pin configuration after setup.
 void ensureBuzzerPin() {
   static bool inited = false;
   if (!inited) {
@@ -283,10 +266,6 @@ void handleBuzzer() {
   }
 }
 
-// ================================================================
-//  OLED DISPLAY
-// ================================================================
-
 void updateOLED() {
   uint32_t now = millis();
 
@@ -360,9 +339,7 @@ void updateOLED() {
   u8g2.sendBuffer();
 }
 
-// ================================================================
-//  CLAP DETECTION
-// ================================================================
+// --- Clap detection ---
 
 void processClaps() {
   if (!g_micInited) return;
@@ -500,9 +477,7 @@ void processClaps() {
   }
 }
 
-// ================================================================
-//  MJPEG STREAM HANDLER
-// ================================================================
+// MJPEG stream
 #define STREAM_BOUNDARY "sars_stream"
 #define STREAM_MAX_CAM_FAILURES 50
 static const char* MIME_MJPEG = "multipart/x-mixed-replace;boundary=" STREAM_BOUNDARY;
@@ -551,10 +526,7 @@ esp_err_t streamHandler(httpd_req_t* req) {
   return res;
 }
 
-// ================================================================
-//  POST /state — receive posture + break state from PC
-// ================================================================
-
+// POST /state — posture + break from PC
 esp_err_t stateHandler(httpd_req_t* req) {
   if (!checkAuth(req)) return ESP_OK;
   char buf[512];
@@ -675,10 +647,6 @@ esp_err_t stateHandler(httpd_req_t* req) {
   return ESP_OK;
 }
 
-// ================================================================
-//  MICROPHONE — PDM (ESP-IDF 5.x driver)
-// ================================================================
-
 bool initMic() {
   i2s_chan_config_t chanCfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
   esp_err_t err = i2s_new_channel(&chanCfg, NULL, &g_micHandle);
@@ -718,10 +686,6 @@ bool initMic() {
   return true;
 }
 
-// ================================================================
-//  GET /status
-// ================================================================
-
 esp_err_t statusHandler(httpd_req_t* req) {
   char json[512];
   snprintf(json, sizeof(json),
@@ -744,10 +708,7 @@ esp_err_t statusHandler(httpd_req_t* req) {
   return httpd_resp_send(req, json, strlen(json));
 }
 
-// ================================================================
-//  POST /config — direct threshold control (browser calls this)
-// ================================================================
-
+// POST /config
 esp_err_t configHandler(httpd_req_t* req) {
   if (!checkAuth(req)) return ESP_OK;
   char buf[256];
@@ -803,10 +764,6 @@ esp_err_t configOptionsHandler(httpd_req_t* req) {
   return ESP_OK;
 }
 
-// ================================================================
-//  GET /buzzer — test beep
-// ================================================================
-
 esp_err_t buzzerHandler(httpd_req_t* req) {
   if (!checkAuth(req)) return ESP_OK;
   ensureBuzzerPin();
@@ -825,10 +782,6 @@ esp_err_t buzzerHandler(httpd_req_t* req) {
   httpd_resp_send(req, resp, strlen(resp));
   return ESP_OK;
 }
-
-// ================================================================
-//  SERVERS
-// ================================================================
 
 void startServers() {
   httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
@@ -859,10 +812,6 @@ void startServers() {
     Serial.println("[Server] Stream server started (port 81)");
   }
 }
-
-// ================================================================
-//  CAMERA INIT
-// ================================================================
 
 bool initCamera() {
   camera_config_t cc = {};
@@ -915,10 +864,7 @@ bool initCamera() {
   return true;
 }
 
-// ================================================================
-//  WIFI
-// ================================================================
-
+// WiFi
 bool connectWiFi() {
   Serial.printf("[WiFi] Connecting to '%s'...\n", WIFI_SSID);
 
@@ -952,10 +898,6 @@ bool connectWiFi() {
   Serial.printf("[WiFi] AP IP: %s\n", WiFi.softAPIP().toString().c_str());
   return false;
 }
-
-// ================================================================
-//  SETUP + LOOP
-// ================================================================
 
 void setup() {
   Serial.begin(115200);

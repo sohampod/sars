@@ -117,7 +117,7 @@ class Dashboard:
                 import requests as req
                 base = self.config.esp32_state_url.rsplit('/', 1)[0]
                 headers = {}
-                if hasattr(self.config, 'esp32_api_key') and self.config.esp32_api_key:
+                if self.config.esp32_api_key:
                     headers['X-API-Key'] = self.config.esp32_api_key
                 req.post(base + '/buzzer', headers=headers, timeout=1)
             except Exception:

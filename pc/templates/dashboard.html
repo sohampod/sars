@@ -61,7 +61,7 @@ nav h1{font:400 clamp(18px,2.5vw,26px)/1 'Geist Pixel',monospace;letter-spacing:
 .dot.off{background:var(--red);box-shadow:0 0 8px color-mix(in srgb,var(--red) 30%,transparent);animation:none}
 @keyframes pls{0%,100%{opacity:1}50%{opacity:.3}}
 
-/* ===== GRID — desktop 4-column, single viewport ===== */
+/* Grid layout */
 .grid{
   flex:1;min-height:0;
   display:grid;
@@ -75,11 +75,9 @@ nav h1{font:400 clamp(18px,2.5vw,26px)/1 'Geist Pixel',monospace;letter-spacing:
 .dk{background:var(--dk2)}
 .wm{background:var(--wm);color:var(--wmtxt)}
 
-/* --- Camera feed — spans 2 cols, 2 rows --- */
 .c-feed{grid-column:1/3;grid-row:1/3}
 .c-feed img{width:100%;height:100%;object-fit:cover;display:block}
 
-/* --- Score gauge --- */
 .c-score{grid-column:3;grid-row:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(4px,0.8vh,8px);padding:var(--card-pad)}
 .gauge{width:75%;aspect-ratio:1;max-width:180px}
 .gauge .trk{fill:none;stroke:var(--glass-trk);stroke-width:4}
@@ -88,12 +86,10 @@ nav h1{font:400 clamp(18px,2.5vw,26px)/1 'Geist Pixel',monospace;letter-spacing:
 .gauge-label{font:700 clamp(7px,0.8vh,10px) 'Geist Pixel',monospace;color:var(--mut);letter-spacing:.2em;text-transform:uppercase}
 #stl{font:700 clamp(10px,1.5vh,16px)/1 'Geist Pixel',monospace;text-transform:uppercase;letter-spacing:.14em;transition:color .4s}
 
-/* --- Image card base (shared pattern) --- */
 .img-card{position:relative;background-size:cover;background-position:center}
 .img-card::before{content:'';position:absolute;inset:0;border-radius:inherit}
 .img-card>*{position:relative;z-index:1}
 
-/* --- Status card --- */
 .c-status{grid-column:4;grid-row:1;padding:var(--card-pad);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:clamp(6px,1.2vh,14px);background-image:url('/static/img/silk.jpg')}
 .c-status::before{background:rgba(228,217,204,.72)}
 .c-status>div{display:flex;flex-direction:column;align-items:center;width:100%}
@@ -101,7 +97,6 @@ nav h1{font:400 clamp(18px,2.5vw,26px)/1 'Geist Pixel',monospace;letter-spacing:
 .c-status .big{font:700 clamp(28px,5.5vh,60px)/1 'Geist Pixel',monospace;color:var(--wmtxt);text-transform:uppercase;letter-spacing:.02em}
 .c-status .big-sm{font:700 clamp(20px,3.5vh,40px)/1 'Geist Pixel',monospace;color:var(--wmtxt);text-transform:uppercase;letter-spacing:.02em}
 
-/* --- Break timer --- */
 .c-break{grid-column:3;grid-row:2;padding:var(--card-pad);display:flex;align-items:center;justify-content:center;gap:clamp(12px,2vw,24px)}
 .ring{width:clamp(48px,8vh,80px);height:clamp(48px,8vh,80px);flex-shrink:0}
 .ring .trk{fill:none;stroke:var(--glass-trk);stroke-width:3}
@@ -110,7 +105,6 @@ nav h1{font:400 clamp(18px,2.5vw,26px)/1 'Geist Pixel',monospace;letter-spacing:
 .bm .tag{font:700 clamp(9px,1.2vh,13px) 'Geist Pixel',monospace;color:var(--mut);letter-spacing:.18em;text-transform:uppercase;margin-bottom:4px}
 .bm .ph{font:700 clamp(16px,3vh,28px)/1.2 'Geist Pixel',monospace;color:var(--glass-text);text-transform:uppercase}
 
-/* --- Action buttons --- */
 .c-act{grid-column:4;grid-row:2;display:flex;flex-direction:column;gap:var(--gap);padding:var(--card-pad)}
 .btn{flex:1;border:none;border-radius:10px;cursor:pointer;font:700 clamp(10px,1.3vh,14px) 'Geist Pixel',monospace;letter-spacing:.1em;text-transform:uppercase;transition:all .2s;position:relative;overflow:hidden}
 .btn-c{background:var(--wm);color:var(--wmtxt)}
@@ -121,7 +115,6 @@ nav h1{font:400 clamp(18px,2.5vw,26px)/1 'Geist Pixel',monospace;letter-spacing:
 .btn.ld{pointer-events:none;opacity:.85}
 .btn.ld .fill{width:100%}
 
-/* --- Stat cards row — 4 columns --- */
 .c-stats{grid-column:1/5;grid-row:3;display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap)}
 .si{border-radius:var(--r);padding:var(--card-pad);text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .si .v{font:700 clamp(18px,2.5vw,34px) 'Geist Pixel',monospace;line-height:1.2}
@@ -148,7 +141,6 @@ nav h1{font:400 clamp(18px,2.5vw,26px)/1 'Geist Pixel',monospace;letter-spacing:
 .fire{display:inline-block;animation:pf 1.4s ease infinite}
 @keyframes pf{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
 
-/* --- Bottom row — 1:3 ratio --- */
 .c-bot{grid-column:1/5;grid-row:4;display:grid;grid-template-columns:1fr 3fr;gap:var(--gap);align-items:stretch}
 .c-bot>.c{padding:var(--card-pad);display:flex;flex-direction:column}
 .sec{font:700 clamp(8px,0.8vw,11px) 'Geist Pixel',monospace;letter-spacing:.18em;color:var(--mut);margin-bottom:clamp(4px,0.6vh,10px);text-transform:uppercase;flex-shrink:0}
@@ -178,7 +170,7 @@ nav h1{font:400 clamp(18px,2.5vw,26px)/1 'Geist Pixel',monospace;letter-spacing:
 .bdg-tip-status.locked{color:var(--dim)}
 [data-theme="light"] .bdg-tip{background:var(--dk2);border-color:var(--glass-trk)}
 
-/* ===== Settings panel ===== */
+/* Settings */
 .sp-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:90;opacity:0;pointer-events:none;transition:opacity .3s}
 .sp-overlay.open{opacity:1;pointer-events:auto}
 .sp{position:fixed;top:0;right:0;bottom:0;width:clamp(280px,30vw,360px);background:var(--dk2);z-index:100;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow-y:auto}
@@ -211,11 +203,10 @@ nav h1{font:400 clamp(18px,2.5vw,26px)/1 'Geist Pixel',monospace;letter-spacing:
 .settings-btn{width:32px;height:32px;border:none;border-radius:50%;background:var(--dk3);color:var(--mut);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
 .settings-btn:hover{background:var(--dk);transform:scale(1.1)}
 
-/* ===== Keyboard focus ===== */
 :focus-visible{outline:3px solid var(--pur);outline-offset:2px;border-radius:4px}
 button:focus-visible{outline-offset:1px}
 
-/* ===== prefers-reduced-motion (OS-level) ===== */
+/* reduced motion */
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
 }
@@ -224,11 +215,9 @@ button:focus-visible{outline-offset:1px}
   animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important
 }
 
-/* ===== Text size scaling (zoom scales everything including px values) ===== */
 [data-a11y-text="small"] .shell{zoom:0.88}
 [data-a11y-text="large"] .shell{zoom:1.15}
 
-/* ===== High contrast mode ===== */
 [data-a11y-hc="on"]{--glass-trk:rgba(255,255,255,.2);--glass-ghost:rgba(255,255,255,.15);--glass-bg:rgba(255,255,255,.08);--glass-bar:rgba(255,255,255,.12);--glass-text:rgba(255,255,255,.9);--card-shadow:rgba(0,0,0,.5);--mut:#bbb;--dim:#999}
 [data-a11y-hc="on"] .c{border:1px solid var(--glass-trk)}
 [data-a11y-hc="on"] .si{border:1px solid var(--glass-trk)}
@@ -236,19 +225,17 @@ button:focus-visible{outline-offset:1px}
 [data-a11y-hc="on"][data-theme="light"]{--glass-trk:rgba(0,0,0,.25);--mut:#444;--dim:#666;--card-shadow:rgba(0,0,0,.15)}
 [data-a11y-hc="on"][data-theme="light"] .c{border:1px solid var(--glass-trk)}
 
-/* ===== Color-blind safe mode (deuteranopia) ===== */
 [data-a11y-cb="on"]{--grn:#3b82f6;--amb:#f59e0b;--red:#e879f9}
 [data-a11y-cb="on"][data-theme="light"]{--grn:#2563eb;--amb:#d97706;--red:#c026d3}
 .cb-icon{display:none;font-size:.7em;margin-right:2px}
 [data-a11y-cb="on"] .cb-icon{display:inline}
 
-/* ===== Accessibility section in settings ===== */
 .a11y-seg{display:flex;gap:4px;margin:6px 0}
 .a11y-seg-btn{flex:1;padding:8px 0;border:1px solid var(--glass-trk);border-radius:6px;background:transparent;color:var(--mut);font:700 11px 'Geist Pixel',monospace;cursor:pointer;transition:all .15s;letter-spacing:.05em}
 .a11y-seg-btn:hover{background:var(--glass-bg)}
 .a11y-seg-btn.active{background:var(--pur);color:#fff;border-color:var(--pur)}
 
-/* ===== Clap sensitivity meter ===== */
+/* mic sensitivity */
 .mic-meter{position:relative;width:100%;height:32px;margin:8px 0 4px}
 .mic-track{position:relative;width:100%;height:10px;top:11px;background:var(--glass-trk);border-radius:5px;overflow:hidden}
 .mic-fill{position:absolute;top:0;left:0;height:100%;will-change:transform;transform-origin:left center;transition:width 80ms linear;border-radius:5px 0 0 5px}
@@ -273,7 +260,7 @@ button:focus-visible{outline-offset:1px}
 .mic-slider-wrap{position:relative}
 .mic-slider-wrap.disabled{opacity:.35;pointer-events:none}
 
-/* ===== TABLET — 2 columns, scrollable ===== */
+/* tablet */
 @media(max-width:1024px){
   :root{--pad:12px;--gap:6px;--card-pad:12px;--r:12px}
   .shell--locked{height:auto;overflow:visible;display:flex}
@@ -294,7 +281,6 @@ button:focus-visible{outline-offset:1px}
   .pill{display:none}
 }
 
-/* ===== SMALL TABLET / LARGE PHONE — 2 columns, scrollable ===== */
 @media(max-width:768px){
   :root{--pad:10px;--gap:5px;--card-pad:10px;--r:10px}
   .c-feed{height:26vh;max-height:220px}
@@ -304,7 +290,7 @@ button:focus-visible{outline-offset:1px}
   nav h1{font-size:18px}
 }
 
-/* ===== PHONE — 2 columns compact, scrollable ===== */
+/* phone */
 @media(max-width:480px){
   :root{--pad:6px;--gap:4px;--card-pad:8px;--r:8px}
   .shell{padding:6px}
@@ -886,7 +872,6 @@ poll=function(){
   });
 };
 
-// ===== Clap Sensitivity (log-scale, Discord-style) =====
 var micRms=0,micThresh=3000,micAuto=false;
 var micSettingsOpen=false,micFastPollId=null;
 // One log scale for everything: 300-15000
@@ -1144,7 +1129,6 @@ doReset=function(){
   .finally(function(){rb.disabled=false;rb.style.opacity='';rb.textContent='Confirm Reset'});
 };
 
-// ===== Accessibility =====
 function setTextSize(size){
   var b=document.body;
   if(size==='small')b.dataset.a11yText='small';

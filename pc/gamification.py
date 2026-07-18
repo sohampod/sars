@@ -9,26 +9,26 @@ from break_timer import BreakPhase, BreakState
 from data_logger import DataLogger
 
 LEVELS = [
-    (1, 50, "Slouch Recruit", "Recruit"),
-    (2, 150, "Spine Cadet", "Cadet"),
-    (3, 299, "Posture Novice", "Novice"),
+    (1, 50, "Desk Potato", "Potato"),
+    (2, 150, "Slouch Cadet", "Cadet"),
+    (3, 299, "Novice Sitter", "Novice"),
     (4, 496, "Back Apprentice", "Apprentice"),
-    (5, 806, "Alignment Adept", "Adept"),
+    (5, 806, "Posture Padawan", "Padawan"),
     (6, 1211, "Core Keeper", "Keeper"),
     (7, 1745, "Spine Sentinel", "Sentinel"),
-    (8, 2359, "Posture Knight", "Knight"),
+    (8, 2359, "Sitting Pretty", "Pretty"),
     (9, 3280, "Vertebral Vanguard", "Vanguard"),
     (10, 4268, "Iron Back", "IronBack"),
     (11, 5419, "Alignment Ace", "Ace"),
-    (12, 7196, "Core Commander", "Commander"),
-    (13, 8897, "Spine Sovereign", "Sovereign"),
+    (12, 7196, "Core Crusader", "Crusader"),
+    (13, 8897, "Straight Shooter", "Shooter"),
     (14, 11140, "Posture Paladin", "Paladin"),
     (15, 13677, "Ergo Elite", "Elite"),
-    (16, 16445, "Zen Spine", "ZenSpine"),
-    (17, 20094, "Alignment Archon", "Archon"),
-    (18, 24358, "Posture Paragon", "Paragon"),
+    (16, 16445, "Zen Mode", "Zen"),
+    (17, 20094, "Spine Lord", "Lord"),
+    (18, 24358, "Posture King", "King"),
     (19, 29036, "Iron Throne", "IronThrone"),
-    (20, 33707, "Spine Grandmaster", "Grandmaster"),
+    (20, 33707, "Grandmaster", "Grandmaster"),
 ]
 
 _ACHIEVEMENTS = {
@@ -272,7 +272,7 @@ class GamificationEngine:
         for key, cond in checks.items():
             if key not in self._unlocked and cond():
                 self._unlocked.add(key)
-                self.db.save_achievement(key)
+                self.db.unlock_achievement(key)
                 self._events.append({
                     "type": "achievement_unlocked",
                     "id": key,
@@ -335,20 +335,7 @@ class GamificationEngine:
 
     def get_daily_stats(self) -> dict:
         with self._lock:
-            total = self._session_total_sec()
-            return {
-                "date": datetime.date.today().isoformat(),
-                "daily_xp": int(self._daily_xp),
-                "daily_score": self._daily_score(),
-                "good_sec": int(self._session_good_sec),
-                "warning_sec": int(self._session_warning_sec),
-                "bad_sec": int(self._session_bad_sec),
-                "total_sec": int(total),
-                "good_pct": round(self._session_good_sec / total * 100, 1) if total else 0,
-                "streak_days": self._streak_days,
-                "achievements_unlocked": sorted(self._unlocked),
-                "session_id": self._session_id,
-            }
+            return self._get_daily_stats_inner()
 
     def on_calibration(self):
         with self._lock:
@@ -403,7 +390,6 @@ class GamificationEngine:
                 raise
 
     def _get_daily_stats_inner(self):
-        """Inner get_daily_stats without lock (for use from flush_daily_stats which holds lock)."""
         total = self._session_total_sec()
         return {
             "date": datetime.date.today().isoformat(),

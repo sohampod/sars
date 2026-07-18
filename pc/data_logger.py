@@ -3,16 +3,16 @@ from datetime import datetime, timezone
 
 
 ACHIEVEMENTS = [
-    ('first_steps', 'First Steps', '\U0001f45f', 'Complete your first calibration', 'bronze'),
-    ('warming_up', 'Warming Up', '\U0001f525', '5 min continuous good posture', 'bronze'),
+    ('first_steps', 'First Steps', '👟', 'Complete your first calibration', 'bronze'),
+    ('warming_up', 'Warming Up', '🔥', '5 min continuous good posture', 'bronze'),
     ('break_taker', 'Break Taker', '☕', 'Take a break on time', 'bronze'),
     ('hour_of_power', 'Hour of Power', '⚡', '60 min continuous good posture', 'silver'),
-    ('centurion', 'Centurion', '\U0001f4af', 'Earn 100 XP in one session', 'silver'),
+    ('centurion', 'Centurion', '💯', 'Earn 100 XP in one session', 'silver'),
     ('rising_star', 'Rising Star', '⭐', 'Reach Level 5', 'silver'),
-    ('week_warrior', 'Week Warrior', '\U0001f4c5', '7-day good posture streak', 'silver'),
-    ('zen_master', 'Zen Master', '\U0001f9d8', '90%+ good posture for 4+ hours', 'gold'),
-    ('iron_spine', 'Iron Spine', '\U0001f6e1️', '30-day streak', 'gold'),
-    ('grandmaster', 'Grandmaster', '\U0001f3c6', 'Reach Level 15', 'gold'),
+    ('week_warrior', 'Week Warrior', '📅', '7-day good posture streak', 'silver'),
+    ('zen_master', 'Zen Master', '🧘', '90%+ good posture for 4+ hours', 'gold'),
+    ('iron_spine', 'Iron Spine', '🛡️', '30-day streak', 'gold'),
+    ('grandmaster', 'Grandmaster', '🏆', 'Reach Level 15', 'gold'),
 ]
 
 DEFAULT_STATE = {
@@ -174,9 +174,6 @@ class DataLogger:
     def save_user_state(self, state_dict):
         for k, v in state_dict.items():
             self.set_state(k, v)
-
-    def save_achievement(self, achievement_id):
-        self.unlock_achievement(achievement_id)
 
     def save_daily_stats(self, stats):
         date_str = stats.get('date', '')
